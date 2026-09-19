@@ -30,7 +30,15 @@ endif()
 include(CTest)
 enable_testing()
 
-add_subdirectory(/usr/src/googletest ${CMAKE_BINARY_DIR}/googletest)
+include(FetchContent)
+
+FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+
+FetchContent_MakeAvailable(googletest)
 
 add_executable(oscope_tests
     tests/smoke_test.cpp
