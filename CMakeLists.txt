@@ -18,3 +18,11 @@ target_include_directories(oscope
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
 )
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(oscope PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+    )
+endif()
