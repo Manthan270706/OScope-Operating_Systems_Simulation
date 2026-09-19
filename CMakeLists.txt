@@ -26,3 +26,20 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -Wpedantic
     )
 endif()
+
+include(CTest)
+enable_testing()
+
+add_subdirectory(/usr/src/googletest ${CMAKE_BINARY_DIR}/googletest)
+
+add_executable(oscope_tests
+    tests/smoke_test.cpp
+)
+
+target_link_libraries(oscope_tests
+    PRIVATE
+        GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(oscope_tests)
