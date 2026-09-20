@@ -10,8 +10,22 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+add_library(oscope_core
+    src/scheduling/fcfs.cpp
+)
+
+target_include_directories(oscope_core
+    PUBLIC
+    ${PROJECT_SOURCE_DIR}/include
+)
+
 add_executable(oscope
     src/main.cpp
+)
+
+target_link_libraries(oscope
+    PRIVATE
+    oscope_core
 )
 
 target_include_directories(oscope
@@ -44,14 +58,15 @@ add_executable(oscope_tests
     tests/process_test.cpp
 )
 
+target_link_libraries(oscope_tests
+    PRIVATE
+    oscope_core
+    GTest::gtest_main
+)
+
 target_include_directories(oscope_tests
     PRIVATE
     ${PROJECT_SOURCE_DIR}/include
-)
-
-target_link_libraries(oscope_tests
-    PRIVATE
-        GTest::gtest_main
 )
 
 include(GoogleTest)
