@@ -41,7 +41,12 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 add_executable(oscope_tests
-    tests/smoke_test.cpp
+    tests/process_test.cpp
+)
+
+target_include_directories(oscope_tests
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
 )
 
 target_link_libraries(oscope_tests
