@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "oscope/process.hpp"
+#include "oscope/scheduling_simulation_result.hpp"
 
 namespace oscope {
 
@@ -32,6 +33,12 @@ std::optional<std::vector<Process>> read_processes(std::istream& in, std::ostrea
 void print_main_menu(std::ostream& out);
 void print_relevant_fields_explanation(std::ostream& out, AlgorithmChoice choice);
 std::optional<AlgorithmChoice> read_menu_choice(std::istream& in, std::ostream& out);
+
+// Results and metrics display
+void display_execution_timeline(std::ostream& out, const SchedulingSimulationResult& result);
+void display_process_metrics_table(std::ostream& out, const std::vector<Process>& processes, const SchedulingSimulationResult& result);
+void display_average_metrics(std::ostream& out, const SchedulingSimulationResult& result);
+void display_simulation_results(std::ostream& out, const std::vector<Process>& processes, const SchedulingSimulationResult& result);
 
 // Interactive CLI main entry point
 int run_cli(std::istream& in, std::ostream& out);

@@ -214,3 +214,252 @@ TEST(OScopeCLITest, EofDuringProcessInputExitsCleanly) {
     EXPECT_EQ(exit_code, 0);
     EXPECT_NE(out.str().find("End of input reached. Exiting OScope."), std::string::npos);
 }
+
+// 15. Execution timeline: empty timeline handled cleanly
+TEST(OScopeCLITest, TimelineEmptyHandledCleanly) {
+    oscope::SchedulingSimulationResult empty_result;
+    std::ostringstream out;
+
+    oscope::display_execution_timeline(out, empty_result);
+
+    EXPECT_NE(out.str().find("=== Execution Timeline ==="), std::string::npos);
+    EXPECT_NE(out.str().find("No execution segments recorded (timeline is empty)."), std::string::npos);
+}
+
+// 16. Execution timeline: correct ordering and total interval
+TEST(OScopeCLITest, TimelineCorrectOrderingAndInterval) {
+    oscope::SchedulingSimulationResult result;
+    result.timeline = {
+        {1, 0, 4},
+        {2, 4, 7}
+    };
+    std::ostringstream out;
+
+    oscope::display_execution_timeline(out, result);
+
+    const std::string s = out.str();
+    EXPECT_NE(s.find("Total Simulation Interval: [0 -> 7] (Duration: 7)"), std::string::npos);
+    EXPECT_NE(s.find("| [P1 0-4] | [P2 4-7] |"), std::string::npos);
+    EXPECT_NE(s.find("[0 -> 4] Process PID 1"), std::string::npos);
+    EXPECT_NE(s.find("[4 -> 7] Process PID 2"), std::string::npos);
+}
+
+// 17. Execution timeline: explicit idle gap between segments
+TEST(OScopeCLITest, TimelineIdleGapsBetweenSegments) {
+    oscope::SchedulingSimulationResult result;
+    result.timeline = {
+        {1, 0, 3},
+        {2, 6, 10}
+    };
+    std::ostringstream out;
+
+    oscope::display_execution_timeline(out, result);
+
+    const std::string s = out.str();
+    EXPECT_NE(s.find("[IDLE 3-6]"), std::string::npos);
+    EXPECT_NE(s.find("[3 -> 6] IDLE (CPU Idle)"), std::string::npos);
+    EXPECT_NE(s.find("[0 -> 3] Process PID 1"), std::string::npos);
+    EXPECT_NE(s.find("[6 -> 10] Process PID 2"), std::string::npos);
+}
+
+// 18. Execution timeline: preemptive/repeated execution segments
+TEST(OScopeCLITest, TimelinePreemptiveAndRepeatedSegments) {
+    oscope::SchedulingSimulationResult result;
+    result.timeline = {
+        {1, 0, 2},
+        {2, 2, 4},
+        {1, 4, 5}
+    };
+    std::ostringstream out;
+
+    oscope::display_execution_timeline(out, result);
+
+    const std::string s = out.str();
+    EXPECT_NE(s.find("| [P1 0-2] | [P2 2-4] | [P1 4-5] |"), std::string::npos);
+    EXPECT_NE(s.find("[0 -> 2] Process PID 1"), std::string::npos);
+    EXPECT_NE(s.find("[2 -> 4] Process PID 2"), std::string::npos);
+    EXPECT_NE(s.find("[4 -> 5] Process PID 1"), std::string::npos);
+}
+
+// 19. Process metrics table: empty result handled cleanly
+TEST(OScopeCLITest, ProcessMetricsTableEmptyHandledCleanly) {
+    std::vector<oscope::Process> processes;
+    oscope::SchedulingSimulationResult empty_result;
+    std::ostringstream out;
+
+    oscope::display_process_metrics_table(out, processes, empty_result);
+
+    EXPECT_NE(out.str().find("=== Process Metrics Table ==="), std::string::npos);
+    EXPECT_NE(out.str().find("No process metrics available (simulation result is empty)."), std::string::npos);
+}
+
+// 20. Process metrics table: correct process-to-metrics matching by PID
+TEST(OScopeCLITest, ProcessMetricsTableMatchesByPid) {
+    // Processes entered in order: PID 2 then PID 1
+    std::vector<oscope::Process> processes = {
+        {2, 5, 6, 0},
+        {1, 0, 4, 0}
+    };
+    // Result order: PID 1 then PID 2
+    oscope::SchedulingSimulationResult result;
+    result.process_results = {
+        {1, 4, 4, 0, 0},
+        {2, 11, 6, 0, 0}
+    };
+    std::ostringstream out;
+
+    oscope::display_process_metrics_table(out, processes, result);
+
+    const std::string s = out.str();
+    EXPECT_NE(s.find("=== Process Metrics Table ==="), std::string::npos);
+    // Verify rows contain PIDs and their matched arrival and burst times
+    EXPECT_NE(s.find("4"), std::string::npos);
+    EXPECT_NE(s.find("5"), std::string::npos);
+    EXPECT_NE(s.find("6"), std::string::npos);
+    EXPECT_NE(s.find("11"), std::string::npos);
+}
+
+// 21. Process metrics table: all requested metric columns present
+TEST(OScopeCLITest, ProcessMetricsTableContainsAllRequestedColumns) {
+    std::vector<oscope::Process> processes = {{1, 0, 2, 0}};
+    oscope::SchedulingSimulationResult result;
+    result.process_results = {{1, 2, 2, 0, 0}};
+    std::ostringstream out;
+
+    oscope::display_process_metrics_table(out, processes, result);
+
+    const std::string s = out.str();
+    EXPECT_NE(s.find("PID"), std::string::npos);
+    EXPECT_NE(s.find("Arrival"), std::string::npos);
+    EXPECT_NE(s.find("Burst"), std::string::npos);
+    EXPECT_NE(s.find("Completion"), std::string::npos);
+    EXPECT_NE(s.find("Turnaround"), std::string::npos);
+    EXPECT_NE(s.find("Waiting"), std::string::npos);
+    EXPECT_NE(s.find("Response"), std::string::npos);
+}
+
+// 22. Average metrics: empty result handled cleanly
+TEST(OScopeCLITest, AverageMetricsEmptyHandledCleanly) {
+    oscope::SchedulingSimulationResult empty_result;
+    std::ostringstream out;
+
+    oscope::display_average_metrics(out, empty_result);
+
+    EXPECT_NE(out.str().find("=== Average Metrics ==="), std::string::npos);
+    EXPECT_NE(out.str().find("No process metrics available to calculate averages (simulation result is empty)."), std::string::npos);
+}
+
+// 23. Average metrics: calculated values, decimal formatting, and stream state preservation
+TEST(OScopeCLITest, AverageMetricsCalculatedAndDecimalFormatted) {
+    oscope::SchedulingSimulationResult result;
+    // 3 processes:
+    // waiting times: 1, 2, 2 -> avg = 5.0 / 3 = 1.67
+    // turnaround times: 4, 5, 6 -> avg = 15.0 / 3 = 5.00
+    // response times: 0, 1, 2 -> avg = 3.0 / 3 = 1.00
+    result.process_results = {
+        {1, 4, 4, 1, 0},
+        {2, 5, 5, 2, 1},
+        {3, 6, 6, 2, 2}
+    };
+    std::ostringstream out;
+    out.precision(6);
+    auto initial_flags = out.flags();
+
+    oscope::display_average_metrics(out, result);
+
+    const std::string s = out.str();
+    EXPECT_NE(s.find("Average Waiting Time:    1.67"), std::string::npos);
+    EXPECT_NE(s.find("Average Turnaround Time: 5.00"), std::string::npos);
+    EXPECT_NE(s.find("Average Response Time:   1.00"), std::string::npos);
+
+    // Stream formatting should be restored
+    EXPECT_EQ(out.precision(), 6);
+    EXPECT_EQ(out.flags(), initial_flags);
+}
+
+// 24. End-to-end interactive CLI test: FCFS displays full timeline, table, and averages
+TEST(OScopeCLITest, InteractiveFcfsDisplaysFullResults) {
+    // Select 1 (FCFS)
+    // 2 processes:
+    // P1: PID 1, Arr 0, Burst 3, Prio 0
+    // P2: PID 2, Arr 1, Burst 2, Prio 0
+    // Then 7 (Exit)
+    std::istringstream in("1\n2\n1\n0\n3\n0\n2\n1\n2\n0\n7\n");
+    std::ostringstream out;
+
+    int exit_code = oscope::run_cli(in, out);
+
+    EXPECT_EQ(exit_code, 0);
+    const std::string s = out.str();
+    EXPECT_NE(s.find("=== Execution Timeline ==="), std::string::npos);
+    EXPECT_NE(s.find("Total Simulation Interval: [0 -> 5] (Duration: 5)"), std::string::npos);
+    EXPECT_NE(s.find("| [P1 0-3] | [P2 3-5] |"), std::string::npos);
+    EXPECT_NE(s.find("=== Process Metrics Table ==="), std::string::npos);
+    EXPECT_NE(s.find("=== Average Metrics ==="), std::string::npos);
+    EXPECT_NE(s.find("Average Waiting Time:"), std::string::npos);
+    EXPECT_NE(s.find("Average Turnaround Time:"), std::string::npos);
+    EXPECT_NE(s.find("Average Response Time:"), std::string::npos);
+}
+
+// 25. End-to-end interactive CLI test: Round Robin shows preemption slices
+TEST(OScopeCLITest, InteractiveRoundRobinPreemptionDisplay) {
+    // Select 5 (Round Robin), quantum 2
+    // 2 processes:
+    // P1: PID 1, Arr 0, Burst 3, Prio 0
+    // P2: PID 2, Arr 0, Burst 2, Prio 0
+    // Then 7 (Exit)
+    // P1 runs [0-2], P2 runs [2-4], P1 runs [4-5]
+    std::istringstream in("5\n2\n2\n1\n0\n3\n0\n2\n0\n2\n0\n7\n");
+    std::ostringstream out;
+
+    int exit_code = oscope::run_cli(in, out);
+
+    EXPECT_EQ(exit_code, 0);
+    const std::string s = out.str();
+    EXPECT_NE(s.find("| [P1 0-2] | [P2 2-4] | [P1 4-5] |"), std::string::npos);
+    EXPECT_NE(s.find("[0 -> 2] Process PID 1"), std::string::npos);
+    EXPECT_NE(s.find("[2 -> 4] Process PID 2"), std::string::npos);
+    EXPECT_NE(s.find("[4 -> 5] Process PID 1"), std::string::npos);
+}
+
+// 26. End-to-end interactive CLI test: Idle gap displayed explicitly
+TEST(OScopeCLITest, InteractiveFcfsWithIdleGapDisplay) {
+    // Select 1 (FCFS)
+    // 2 processes:
+    // P1: PID 1, Arr 0, Burst 2, Prio 0
+    // P2: PID 2, Arr 5, Burst 3, Prio 0
+    // Then 7 (Exit)
+    std::istringstream in("1\n2\n1\n0\n2\n0\n2\n5\n3\n0\n7\n");
+    std::ostringstream out;
+
+    int exit_code = oscope::run_cli(in, out);
+
+    EXPECT_EQ(exit_code, 0);
+    const std::string s = out.str();
+    EXPECT_NE(s.find("[IDLE 2-5]"), std::string::npos);
+    EXPECT_NE(s.find("[2 -> 5] IDLE (CPU Idle)"), std::string::npos);
+    EXPECT_NE(s.find("[0 -> 2] Process PID 1"), std::string::npos);
+    EXPECT_NE(s.find("[5 -> 8] Process PID 2"), std::string::npos);
+}
+
+// 27. Process metrics table: unknown PID displays N/A for arrival and burst times
+TEST(OScopeCLITest, ProcessMetricsTableUnknownPidDisplaysNA) {
+    // Original process list only contains PID 1
+    std::vector<oscope::Process> processes = {
+        {1, 0, 4, 0}
+    };
+    // Result contains PID 1 and unknown PID 99
+    oscope::SchedulingSimulationResult result;
+    result.process_results = {
+        {1, 4, 4, 0, 0},
+        {99, 8, 4, 0, 0}
+    };
+    std::ostringstream out;
+
+    oscope::display_process_metrics_table(out, processes, result);
+
+    const std::string s = out.str();
+    EXPECT_NE(s.find("=== Process Metrics Table ==="), std::string::npos);
+    EXPECT_NE(s.find("99"), std::string::npos);
+    EXPECT_NE(s.find("N/A"), std::string::npos);
+}

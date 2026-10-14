@@ -1,12 +1,15 @@
 #include "oscope/cli.hpp"
 
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
+#include "oscope/scheduling_metrics.hpp"
 #include "oscope/scheduling/fcfs.hpp"
 #include "oscope/scheduling/mlfq.hpp"
 #include "oscope/scheduling/priority.hpp"
@@ -273,11 +276,121 @@ int run_cli(std::istream& in, std::ostream& out) {
             SchedulingSimulationResult result = algorithm->schedule(processes);
             out << "\nSimulation completed successfully.\n";
             out << "Scheduled " << result.process_results.size() << " process(es) across "
-                << result.timeline.size() << " timeline execution segment(s).\n\n";
+                << result.timeline.size() << " timeline execution segment(s).\n";
+            display_simulation_results(out, processes, result);
+            out << "\n";
         } catch (const std::exception& e) {
             out << "\nSimulation failed with error: " << e.what() << "\n\n";
         }
     }
+}
+
+void display_execution_timeline(std::ostream& out, const SchedulingSimulationResult& result) {
+    out << "\n=== Execution Timeline ===\n";
+    if (result.timeline.empty()) {
+        out << "No execution segments recorded (timeline is empty).\n";
+        return;
+    }
+
+    int first_start = result.timeline.front().start_time;
+    int final_end = result.timeline.back().end_time;
+    out << "Total Simulation Interval: [" << first_start << " -> " << final_end
+        << "] (Duration: " << (final_end - first_start) << ")\n\n";
+
+    out << "Gantt Chart:\n";
+    for (std::size_t i = 0; i < result.timeline.size(); ++i) {
+        const auto& seg = result.timeline[i];
+        if (i > 0 && seg.start_time > result.timeline[i - 1].end_time) {
+            out << "| [IDLE " << result.timeline[i - 1].end_time << "-" << seg.start_time << "] ";
+        }
+        out << "| [P" << seg.pid << " " << seg.start_time << "-" << seg.end_time << "] ";
+    }
+    out << "|\n\n";
+
+    out << "Execution Segments:\n";
+    for (std::size_t i = 0; i < result.timeline.size(); ++i) {
+        const auto& seg = result.timeline[i];
+        if (i > 0 && seg.start_time > result.timeline[i - 1].end_time) {
+            out << "  [" << result.timeline[i - 1].end_time << " -> " << seg.start_time
+                << "] IDLE (CPU Idle)\n";
+        }
+        out << "  [" << seg.start_time << " -> " << seg.end_time
+            << "] Process PID " << seg.pid << "\n";
+    }
+}
+
+void display_process_metrics_table(std::ostream& out, const std::vector<Process>& processes, const SchedulingSimulationResult& result) {
+    out << "\n=== Process Metrics Table ===\n";
+    if (result.process_results.empty()) {
+        out << "No process metrics available (simulation result is empty).\n";
+        return;
+    }
+
+    std::unordered_map<int, const Process*> process_map;
+    for (const auto& proc : processes) {
+        process_map[proc.pid] = &proc;
+    }
+
+    const auto orig_flags = out.flags();
+
+    out << std::right
+        << std::setw(6) << "PID"
+        << std::setw(10) << "Arrival"
+        << std::setw(10) << "Burst"
+        << std::setw(13) << "Completion"
+        << std::setw(13) << "Turnaround"
+        << std::setw(11) << "Waiting"
+        << std::setw(11) << "Response"
+        << "\n";
+    out << std::string(74, '-') << "\n";
+
+    for (const auto& pr : result.process_results) {
+        auto it = process_map.find(pr.pid);
+        const bool found = (it != process_map.end());
+
+        out << std::setw(6) << pr.pid;
+        if (found) {
+            out << std::setw(10) << it->second->arrival_time
+                << std::setw(10) << it->second->burst_time;
+        } else {
+            out << std::setw(10) << "N/A"
+                << std::setw(10) << "N/A";
+        }
+        out << std::setw(13) << pr.completion_time
+            << std::setw(13) << pr.turnaround_time
+            << std::setw(11) << pr.waiting_time
+            << std::setw(11) << pr.response_time
+            << "\n";
+    }
+
+    out.flags(orig_flags);
+}
+
+void display_average_metrics(std::ostream& out, const SchedulingSimulationResult& result) {
+    out << "\n=== Average Metrics ===\n";
+    if (result.process_results.empty()) {
+        out << "No process metrics available to calculate averages (simulation result is empty).\n";
+        return;
+    }
+
+    SchedulingMetrics metrics = calculate_metrics(result);
+
+    const auto orig_flags = out.flags();
+    const auto orig_prec = out.precision();
+
+    out << std::fixed << std::setprecision(2);
+    out << "Average Waiting Time:    " << metrics.average_waiting_time << "\n"
+        << "Average Turnaround Time: " << metrics.average_turnaround_time << "\n"
+        << "Average Response Time:   " << metrics.average_response_time << "\n";
+
+    out.flags(orig_flags);
+    out.precision(orig_prec);
+}
+
+void display_simulation_results(std::ostream& out, const std::vector<Process>& processes, const SchedulingSimulationResult& result) {
+    display_execution_timeline(out, result);
+    display_process_metrics_table(out, processes, result);
+    display_average_metrics(out, result);
 }
 
 } // namespace oscope
