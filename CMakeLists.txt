@@ -12,6 +12,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(oscope_core
     src/scheduling/fcfs.cpp
+    src/scheduling/sjf.cpp
 )
 
 target_include_directories(oscope_core
@@ -56,6 +57,7 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(oscope_tests
     tests/process_test.cpp
+    tests/sjf_test.cpp
 )
 
 target_link_libraries(oscope_tests
