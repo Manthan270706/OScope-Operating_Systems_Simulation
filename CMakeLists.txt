@@ -23,6 +23,7 @@ add_library(oscope_core
     src/paging/lru.cpp
     src/paging/optimal.cpp
     src/paging/page_replacement_comparison.cpp
+    src/process_manager.cpp
     src/cli.cpp
 )
 
@@ -80,6 +81,7 @@ add_executable(oscope_tests
     tests/paging_optimal_test.cpp
     tests/paging_comparison_test.cpp
     tests/paging_cli_test.cpp
+    tests/process_manager_test.cpp
 )
 
 target_link_libraries(oscope_tests
