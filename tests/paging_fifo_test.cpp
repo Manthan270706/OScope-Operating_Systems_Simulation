@@ -83,11 +83,11 @@ TEST(OScopePagingFIFOTest, MatchesSilberschatzTextbookExample) {
     // Initial 3 allocations (cold misses, no evictions)
     EXPECT_TRUE(result.steps[0].is_fault);
     EXPECT_EQ(result.steps[0].evicted_page, std::nullopt);
-    EXPECT_EQ(result.steps[0].frames, (std::vector<int>{7}));
+    EXPECT_EQ(result.steps[0].frames, (std::vector<int>{7, -1, -1}));
 
     EXPECT_TRUE(result.steps[1].is_fault);
     EXPECT_EQ(result.steps[1].evicted_page, std::nullopt);
-    EXPECT_EQ(result.steps[1].frames, (std::vector<int>{7, 0}));
+    EXPECT_EQ(result.steps[1].frames, (std::vector<int>{7, 0, -1}));
 
     EXPECT_TRUE(result.steps[2].is_fault);
     EXPECT_EQ(result.steps[2].evicted_page, std::nullopt);
@@ -159,4 +159,32 @@ TEST(OScopePagingFIFOTest, PolymorphicInvocationThroughBasePointer) {
     EXPECT_EQ(result.total_references, 4);
     EXPECT_EQ(result.page_faults, 4);
     EXPECT_EQ(result.page_hits, 0);
+}
+
+// 10. Frame snapshots have fixed size equal to frame_count with -1 for empty slots
+TEST(OScopePagingFIFOTest, FixedSizeFrameSnapshotsWithEmptySlots) {
+    oscope::FIFO fifo;
+    const std::vector<int> ref = {5, 6, 7, 8};
+    auto result = fifo.simulate(ref, 3);
+
+    ASSERT_EQ(result.steps.size(), 4);
+
+    // Initialization (during filling)
+    EXPECT_EQ(result.steps[0].frames, (std::vector<int>{5, -1, -1}));
+    EXPECT_EQ(result.steps[0].frames.size(), 3);
+    EXPECT_EQ(result.steps[0].evicted_page, std::nullopt);
+
+    EXPECT_EQ(result.steps[1].frames, (std::vector<int>{5, 6, -1}));
+    EXPECT_EQ(result.steps[1].frames.size(), 3);
+    EXPECT_EQ(result.steps[1].evicted_page, std::nullopt);
+
+    // After filling frames completely
+    EXPECT_EQ(result.steps[2].frames, (std::vector<int>{5, 6, 7}));
+    EXPECT_EQ(result.steps[2].frames.size(), 3);
+    EXPECT_EQ(result.steps[2].evicted_page, std::nullopt);
+
+    // After eviction (FIFO evicts oldest page 5 from slot 0)
+    EXPECT_EQ(result.steps[3].frames, (std::vector<int>{8, 6, 7}));
+    EXPECT_EQ(result.steps[3].frames.size(), 3);
+    EXPECT_EQ(result.steps[3].evicted_page, 5);
 }

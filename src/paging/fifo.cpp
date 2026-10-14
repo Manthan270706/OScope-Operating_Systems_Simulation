@@ -26,8 +26,8 @@ FIFO::simulate(const std::vector<int>& reference_string, int frame_count) {
         return result;
     }
 
-    std::vector<int> current_frames;
-    current_frames.reserve(static_cast<std::size_t>(frame_count));
+    // Allocate exactly frame_count frame slots, with -1 representing empty slots
+    std::vector<int> current_frames(static_cast<std::size_t>(frame_count), -1);
     std::size_t victim_idx = 0;
 
     for (int page : reference_string) {
@@ -45,9 +45,11 @@ FIFO::simulate(const std::vector<int>& reference_string, int frame_count) {
             step.is_fault = true;
             result.page_faults++;
 
-            if (current_frames.size() < static_cast<std::size_t>(frame_count)) {
-                // Free frame available
-                current_frames.push_back(page);
+            // Look for the first available empty slot (-1)
+            auto empty_it = std::find(current_frames.begin(), current_frames.end(), -1);
+            if (empty_it != current_frames.end()) {
+                // Fill first available empty slot without advancing victim pointer
+                *empty_it = page;
                 step.evicted_page = std::nullopt;
             } else {
                 // All frames are occupied; evict the oldest resident page (FIFO order)
