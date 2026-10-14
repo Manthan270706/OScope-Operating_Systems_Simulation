@@ -22,6 +22,7 @@ add_library(oscope_core
     src/paging/fifo.cpp
     src/paging/lru.cpp
     src/paging/optimal.cpp
+    src/paging/page_replacement_comparison.cpp
     src/cli.cpp
 )
 
@@ -77,6 +78,7 @@ add_executable(oscope_tests
     tests/paging_fifo_test.cpp
     tests/paging_lru_test.cpp
     tests/paging_optimal_test.cpp
+    tests/paging_comparison_test.cpp
 )
 
 target_link_libraries(oscope_tests
