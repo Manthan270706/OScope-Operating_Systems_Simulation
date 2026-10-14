@@ -19,6 +19,7 @@ add_library(oscope_core
     src/scheduling/mlfq.cpp
     src/scheduling_metrics.cpp
     src/scheduling_comparison.cpp
+    src/cli.cpp
 )
 
 target_include_directories(oscope_core
@@ -69,6 +70,7 @@ add_executable(oscope_tests
     tests/round_robin_test.cpp
     tests/mlfq_test.cpp
     tests/scheduling_comparison_test.cpp
+    tests/cli_test.cpp
 )
 
 target_link_libraries(oscope_tests

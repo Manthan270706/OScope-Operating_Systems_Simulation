@@ -1,7 +1,7 @@
 #include <iostream>
 
-int main() {
-    std::cout << "OScope initialized successfully.\n";
-    return 0;
-}
+#include "oscope/cli.hpp"
 
+int main() {
+    return oscope::run_cli(std::cin, std::cout);
+}
