@@ -14,6 +14,8 @@ add_library(oscope_core
     src/scheduling/fcfs.cpp
     src/scheduling/sjf.cpp
     src/scheduling/srtf.cpp
+    src/scheduling/priority.cpp
+    src/scheduling/round_robin.cpp
 )
 
 target_include_directories(oscope_core
@@ -60,6 +62,8 @@ add_executable(oscope_tests
     tests/process_test.cpp
     tests/sjf_test.cpp
     tests/srtf_test.cpp
+    tests/priority_test.cpp
+    tests/round_robin_test.cpp
 )
 
 target_link_libraries(oscope_tests
