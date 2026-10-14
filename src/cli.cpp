@@ -4,11 +4,17 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
+#include "oscope/paging/fifo.hpp"
+#include "oscope/paging/lru.hpp"
+#include "oscope/paging/optimal.hpp"
+#include "oscope/paging/page_replacement_comparison.hpp"
+#include "oscope/paging/page_replacement_result.hpp"
 #include "oscope/scheduling_metrics.hpp"
 #include "oscope/scheduling/fcfs.hpp"
 #include "oscope/scheduling/mlfq.hpp"
@@ -82,6 +88,67 @@ bool read_non_negative_int(std::istream& in, std::ostream& out, const std::strin
     }
 }
 
+std::optional<std::vector<int>> read_reference_string(std::istream& in, std::ostream& out, const std::string& prompt) {
+    std::string line;
+    while (true) {
+        out << prompt;
+        if (!std::getline(in, line)) {
+            return std::nullopt;
+        }
+
+        const auto start = line.find_first_not_of(" \t\r\n");
+        if (start == std::string::npos) {
+            // Empty reference string is valid
+            return std::vector<int>{};
+        }
+        const auto end = line.find_last_not_of(" \t\r\n");
+        const std::string trimmed = line.substr(start, end - start + 1);
+
+        std::istringstream iss(trimmed);
+        std::string token;
+        std::vector<int> pages;
+        bool valid = true;
+
+        while (iss >> token) {
+            try {
+                std::size_t pos = 0;
+                long val = std::stol(token, &pos);
+                if (pos != token.size()) {
+                    out << "Error: Trailing non-numeric characters in token '" << token
+                        << "'. Page numbers must be valid integers.\n";
+                    valid = false;
+                    break;
+                }
+                if (val < 0) {
+                    out << "Error: Negative page number (" << val
+                        << ") detected. Page numbers must be non-negative (>= 0).\n";
+                    valid = false;
+                    break;
+                }
+                if (val > std::numeric_limits<int>::max()) {
+                    out << "Error: Page number " << val << " exceeds maximum integer range.\n";
+                    valid = false;
+                    break;
+                }
+                pages.push_back(static_cast<int>(val));
+            } catch (const std::invalid_argument&) {
+                out << "Error: Invalid numeric input in token '" << token
+                    << "'. Page numbers must be non-negative integers.\n";
+                valid = false;
+                break;
+            } catch (const std::out_of_range&) {
+                out << "Error: Page number out of integer range in token '" << token << "'.\n";
+                valid = false;
+                break;
+            }
+        }
+
+        if (valid) {
+            return pages;
+        }
+    }
+}
+
 void print_relevant_fields_explanation(std::ostream& out, AlgorithmChoice choice) {
     out << "\n[Algorithm Information]\n";
     switch (choice) {
@@ -113,6 +180,7 @@ void print_relevant_fields_explanation(std::ostream& out, AlgorithmChoice choice
             out << "Selected: Compare All Scheduling Algorithms\n"
                 << "Relevant fields: PID, Arrival Time, Burst Time, Priority (Used by Priority scheduling).\n";
             break;
+        case AlgorithmChoice::Paging:
         case AlgorithmChoice::Exit:
             break;
     }
@@ -177,7 +245,7 @@ std::optional<std::vector<Process>> read_processes(std::istream& in, std::ostrea
 void print_main_menu(std::ostream& out) {
     out << "\n========================================\n"
         << "                OScope                  \n"
-        << "  CPU Scheduling Simulation Platform    \n"
+        << "  CPU Scheduling & Paging Platform      \n"
         << "========================================\n"
         << "1. Run FCFS\n"
         << "2. Run SJF\n"
@@ -185,22 +253,122 @@ void print_main_menu(std::ostream& out) {
         << "4. Run non-preemptive Priority\n"
         << "5. Run Round Robin\n"
         << "6. Run MLFQ\n"
-        << "7. Compare all algorithms\n"
-        << "8. Exit\n"
+        << "7. Compare all scheduling algorithms\n"
+        << "8. Page replacement (Paging)\n"
+        << "9. Exit\n"
         << "========================================\n";
 }
 
 std::optional<AlgorithmChoice> read_menu_choice(std::istream& in, std::ostream& out) {
     int choice_val = 0;
     while (true) {
-        if (!read_int(in, out, "Enter your choice (1-8): ", choice_val)) {
+        if (!read_int(in, out, "Enter your choice (1-9): ", choice_val)) {
             return std::nullopt;
         }
-        if (choice_val < 1 || choice_val > 8) {
-            out << "Error: Choice must be between 1 and 8.\n";
+        if (choice_val < 1 || choice_val > 9) {
+            out << "Error: Choice must be between 1 and 9.\n";
             continue;
         }
         return static_cast<AlgorithmChoice>(choice_val);
+    }
+}
+
+void print_paging_menu(std::ostream& out) {
+    out << "\n========================================\n"
+        << "            Page Replacement            \n"
+        << "========================================\n"
+        << "1. Run FIFO\n"
+        << "2. Run LRU\n"
+        << "3. Run Optimal\n"
+        << "4. Compare FIFO, LRU, and Optimal\n"
+        << "5. Return to main menu\n"
+        << "========================================\n";
+}
+
+std::optional<PagingChoice> read_paging_choice(std::istream& in, std::ostream& out) {
+    int choice_val = 0;
+    while (true) {
+        if (!read_int(in, out, "Enter your choice (1-5): ", choice_val)) {
+            return std::nullopt;
+        }
+        if (choice_val < 1 || choice_val > 5) {
+            out << "Error: Choice must be between 1 and 5.\n";
+            continue;
+        }
+        return static_cast<PagingChoice>(choice_val);
+    }
+}
+
+bool run_paging_cli(std::istream& in, std::ostream& out) {
+    while (true) {
+        print_paging_menu(out);
+
+        auto choice_opt = read_paging_choice(in, out);
+        if (!choice_opt.has_value()) {
+            return false;
+        }
+
+        PagingChoice choice = choice_opt.value();
+        if (choice == PagingChoice::ReturnToMainMenu) {
+            return true;
+        }
+
+        int frame_count = 0;
+        if (!read_positive_int(in, out, "Enter number of frames: ", frame_count)) {
+            return false;
+        }
+
+        auto ref_opt = read_reference_string(
+            in, out, "Enter page-reference string (space-separated, empty line allowed): ");
+        if (!ref_opt.has_value()) {
+            return false;
+        }
+
+        const auto& ref_string = ref_opt.value();
+
+        if (choice == PagingChoice::CompareAll) {
+            try {
+                auto comp_result = PageReplacementComparator::compare_all(ref_string, frame_count);
+                out << "\nComparison completed successfully across "
+                    << comp_result.size() << " page replacement algorithm(s).\n";
+                display_paging_comparison_table(out, comp_result);
+                out << "\n";
+            } catch (const std::exception& e) {
+                out << "\nComparison failed with error: " << e.what() << "\n\n";
+            }
+            continue;
+        }
+
+        std::unique_ptr<PageReplacementAlgorithm> algorithm;
+        std::string algo_name;
+        switch (choice) {
+            case PagingChoice::FIFO:
+                algorithm = std::make_unique<FIFO>();
+                algo_name = "FIFO";
+                break;
+            case PagingChoice::LRU:
+                algorithm = std::make_unique<LRU>();
+                algo_name = "LRU";
+                break;
+            case PagingChoice::Optimal:
+                algorithm = std::make_unique<Optimal>();
+                algo_name = "Optimal";
+                break;
+            case PagingChoice::CompareAll:
+            case PagingChoice::ReturnToMainMenu:
+                return true;
+        }
+
+        try {
+            PageReplacementResult result = algorithm->simulate(ref_string, frame_count);
+            out << "\n[" << algo_name << " Page Replacement Simulation]\n";
+            out << "Simulation completed successfully with " << result.total_references
+                << " reference(s) across " << frame_count << " frame(s).\n";
+            display_paging_simulation_results(out, result, frame_count);
+            out << "\n";
+        } catch (const std::exception& e) {
+            out << "\nSimulation failed with error: " << e.what() << "\n\n";
+        }
     }
 }
 
@@ -218,6 +386,14 @@ int run_cli(std::istream& in, std::ostream& out) {
         if (choice == AlgorithmChoice::Exit) {
             out << "\nExiting OScope. Goodbye!\n";
             return 0;
+        }
+
+        if (choice == AlgorithmChoice::Paging) {
+            if (!run_paging_cli(in, out)) {
+                out << "\nEnd of input reached. Exiting OScope.\n";
+                return 0;
+            }
+            continue;
         }
 
         // Algorithm-specific configuration
@@ -301,6 +477,7 @@ int run_cli(std::istream& in, std::ostream& out) {
                 algorithm = std::make_unique<MLFQ>(mlfq_q0, mlfq_q1, mlfq_q2);
                 break;
             case AlgorithmChoice::CompareAll:
+            case AlgorithmChoice::Paging:
             case AlgorithmChoice::Exit:
                 return 0;
         }
@@ -463,6 +640,110 @@ void display_comparison_table(std::ostream& out, const std::vector<SchedulingCom
             << std::setw(14) << entry.average_waiting_time()
             << std::setw(16) << entry.average_turnaround_time()
             << std::setw(14) << entry.average_response_time()
+            << "\n";
+    }
+
+    out.flags(orig_flags);
+    out.precision(orig_prec);
+}
+
+void display_paging_steps(std::ostream& out, const PageReplacementResult& result, int frame_count) {
+    (void)frame_count;
+    out << "\n=== Page Replacement Step-by-Step Execution ===\n";
+    if (result.steps.empty()) {
+        out << "No page references recorded (reference string is empty).\n";
+        return;
+    }
+
+    const auto orig_flags = out.flags();
+
+    out << std::right
+        << std::setw(6) << "Step"
+        << std::setw(8) << "Page"
+        << std::setw(10) << "Result"
+        << std::setw(11) << "Evicted"
+        << "  " << "Frames"
+        << "\n";
+    out << std::string(55, '-') << "\n";
+
+    for (std::size_t i = 0; i < result.steps.size(); ++i) {
+        const auto& step = result.steps[i];
+        out << std::setw(6) << (i + 1)
+            << std::setw(8) << step.page
+            << std::setw(10) << (step.is_fault ? "Fault" : "Hit");
+        if (step.evicted_page.has_value()) {
+            out << std::setw(11) << *step.evicted_page;
+        } else {
+            out << std::setw(11) << "None";
+        }
+        out << "  [";
+        for (std::size_t f = 0; f < step.frames.size(); ++f) {
+            if (f > 0) out << ", ";
+            if (step.frames[f] == -1) {
+                out << "-1";
+            } else {
+                out << step.frames[f];
+            }
+        }
+        out << "]\n";
+    }
+
+    out.flags(orig_flags);
+}
+
+void display_paging_metrics(std::ostream& out, const PageReplacementResult& result) {
+    out << "\n=== Page Replacement Metrics ===\n";
+    const auto orig_flags = out.flags();
+    const auto orig_prec = out.precision();
+
+    out << std::fixed << std::setprecision(2);
+    out << "Total Page References: " << result.total_references << "\n"
+        << "Page Faults:           " << result.page_faults << "\n"
+        << "Page Hits:             " << result.page_hits << "\n"
+        << "Page-Fault Rate:       " << (result.fault_rate * 100.0) << "% (" << result.fault_rate << ")\n"
+        << "Page-Hit Rate:         " << (result.hit_rate * 100.0) << "% (" << result.hit_rate << ")\n";
+
+    out.flags(orig_flags);
+    out.precision(orig_prec);
+}
+
+void display_paging_simulation_results(std::ostream& out, const PageReplacementResult& result, int frame_count) {
+    display_paging_steps(out, result, frame_count);
+    display_paging_metrics(out, result);
+}
+
+void display_paging_comparison_table(std::ostream& out, const PageReplacementComparisonResult& result) {
+    out << "\n=== Page Replacement Algorithm Comparison ===\n";
+    if (result.empty()) {
+        out << "No comparison results available (empty comparison entries).\n";
+        return;
+    }
+
+    out << "Frame Count: " << result.frame_count
+        << " | Total References: " << result.reference_string.size() << "\n\n";
+
+    const auto orig_flags = out.flags();
+    const auto orig_prec = out.precision();
+
+    out << std::left << std::setw(14) << "Algorithm"
+        << std::right
+        << std::setw(14) << "References"
+        << std::setw(10) << "Faults"
+        << std::setw(8) << "Hits"
+        << std::setw(15) << "Fault Rate"
+        << std::setw(15) << "Hit Rate"
+        << "\n";
+    out << std::string(76, '-') << "\n";
+
+    out << std::fixed << std::setprecision(2);
+    for (const auto& entry : result.entries) {
+        out << std::left << std::setw(14) << entry.algorithm_name
+            << std::right
+            << std::setw(14) << entry.total_references()
+            << std::setw(10) << entry.page_faults()
+            << std::setw(8) << entry.page_hits()
+            << std::setw(14) << (entry.fault_rate() * 100.0) << "%"
+            << std::setw(14) << (entry.hit_rate() * 100.0) << "%"
             << "\n";
     }
 

@@ -79,6 +79,7 @@ add_executable(oscope_tests
     tests/paging_lru_test.cpp
     tests/paging_optimal_test.cpp
     tests/paging_comparison_test.cpp
+    tests/paging_cli_test.cpp
 )
 
 target_link_libraries(oscope_tests
