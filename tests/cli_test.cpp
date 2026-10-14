@@ -5,9 +5,9 @@
 
 #include "oscope/cli.hpp"
 
-// 1. Clean exit on selecting Option 7
+// 1. Clean exit on selecting Option 8
 TEST(OScopeCLITest, ExitOptionTerminatesCleanly) {
-    std::istringstream in("7\n");
+    std::istringstream in("8\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -29,8 +29,8 @@ TEST(OScopeCLITest, EofAtMainMenuTerminatesCleanly) {
 
 // 3. Recovery from non-numeric menu input
 TEST(OScopeCLITest, RecoversFromNonNumericMenuInput) {
-    // User enters "abc", then "xyz123", then "7" (Exit)
-    std::istringstream in("abc\nxyz123\n7\n");
+    // User enters "abc", then "xyz123", then "8" (Exit)
+    std::istringstream in("abc\nxyz123\n8\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -42,14 +42,14 @@ TEST(OScopeCLITest, RecoversFromNonNumericMenuInput) {
 
 // 4. Rejection of out-of-range menu choice
 TEST(OScopeCLITest, RejectsOutOfRangeMenuChoice) {
-    // User enters 0, then 8, then 7 (Exit)
-    std::istringstream in("0\n8\n7\n");
+    // User enters 0, then 9, then 8 (Exit)
+    std::istringstream in("0\n9\n8\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
 
     EXPECT_EQ(exit_code, 0);
-    EXPECT_NE(out.str().find("Error: Choice must be between 1 and 7."), std::string::npos);
+    EXPECT_NE(out.str().find("Error: Choice must be between 1 and 8."), std::string::npos);
     EXPECT_NE(out.str().find("Exiting OScope. Goodbye!"), std::string::npos);
 }
 
@@ -138,8 +138,8 @@ TEST(OScopeCLITest, RunsFCFSSimulationSuccessfully) {
     // 2 processes:
     // P1: PID 1, Arr 0, Burst 4, Prio 0
     // P2: PID 2, Arr 1, Burst 2, Prio 0
-    // Then 7 (Exit)
-    std::istringstream in("1\n2\n1\n0\n4\n0\n2\n1\n2\n0\n7\n");
+    // Then 8 (Exit)
+    std::istringstream in("1\n2\n1\n0\n4\n0\n2\n1\n2\n0\n8\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -155,8 +155,8 @@ TEST(OScopeCLITest, RunsRoundRobinSimulationWithQuantum) {
     // Select 5 (Round Robin)
     // Quantum: 0 (rejected), -2 (rejected), 3 (accepted)
     // 1 process: PID 1, Arr 0, Burst 7, Prio 0
-    // Then 7 (Exit)
-    std::istringstream in("5\n0\n-2\n3\n1\n1\n0\n7\n0\n7\n");
+    // Then 8 (Exit)
+    std::istringstream in("5\n0\n-2\n3\n1\n1\n0\n7\n0\n8\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -175,8 +175,8 @@ TEST(OScopeCLITest, RunsMLFQSimulationWithQuanta) {
     // Q1: 4
     // Q2: 8
     // 1 process: PID 1, Arr 0, Burst 5, Prio 0
-    // Then 7 (Exit)
-    std::istringstream in("6\n0\n2\n4\n8\n1\n1\n0\n5\n0\n7\n");
+    // Then 8 (Exit)
+    std::istringstream in("6\n0\n2\n4\n8\n1\n1\n0\n5\n0\n8\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -192,8 +192,8 @@ TEST(OScopeCLITest, RunsPrioritySimulationSuccessfully) {
     // 2 processes:
     // P1: PID 1, Arr 0, Burst 4, Prio 2
     // P2: PID 2, Arr 0, Burst 2, Prio 1
-    // Then 7 (Exit)
-    std::istringstream in("4\n2\n1\n0\n4\n2\n2\n0\n2\n1\n7\n");
+    // Then 8 (Exit)
+    std::istringstream in("4\n2\n1\n0\n4\n2\n2\n0\n2\n1\n8\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -383,8 +383,8 @@ TEST(OScopeCLITest, InteractiveFcfsDisplaysFullResults) {
     // 2 processes:
     // P1: PID 1, Arr 0, Burst 3, Prio 0
     // P2: PID 2, Arr 1, Burst 2, Prio 0
-    // Then 7 (Exit)
-    std::istringstream in("1\n2\n1\n0\n3\n0\n2\n1\n2\n0\n7\n");
+    // Then 8 (Exit)
+    std::istringstream in("1\n2\n1\n0\n3\n0\n2\n1\n2\n0\n8\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -407,9 +407,9 @@ TEST(OScopeCLITest, InteractiveRoundRobinPreemptionDisplay) {
     // 2 processes:
     // P1: PID 1, Arr 0, Burst 3, Prio 0
     // P2: PID 2, Arr 0, Burst 2, Prio 0
-    // Then 7 (Exit)
+    // Then 8 (Exit)
     // P1 runs [0-2], P2 runs [2-4], P1 runs [4-5]
-    std::istringstream in("5\n2\n2\n1\n0\n3\n0\n2\n0\n2\n0\n7\n");
+    std::istringstream in("5\n2\n2\n1\n0\n3\n0\n2\n0\n2\n0\n8\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -428,8 +428,8 @@ TEST(OScopeCLITest, InteractiveFcfsWithIdleGapDisplay) {
     // 2 processes:
     // P1: PID 1, Arr 0, Burst 2, Prio 0
     // P2: PID 2, Arr 5, Burst 3, Prio 0
-    // Then 7 (Exit)
-    std::istringstream in("1\n2\n1\n0\n2\n0\n2\n5\n3\n0\n7\n");
+    // Then 8 (Exit)
+    std::istringstream in("1\n2\n1\n0\n2\n0\n2\n5\n3\n0\n8\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -462,4 +462,144 @@ TEST(OScopeCLITest, ProcessMetricsTableUnknownPidDisplaysNA) {
     EXPECT_NE(s.find("=== Process Metrics Table ==="), std::string::npos);
     EXPECT_NE(s.find("99"), std::string::npos);
     EXPECT_NE(s.find("N/A"), std::string::npos);
+}
+
+// 28. Comparison table: empty entries handled cleanly
+TEST(OScopeCLITest, ComparisonTableEmptyHandledCleanly) {
+    std::vector<oscope::SchedulingComparisonEntry> empty_entries;
+    std::ostringstream out;
+
+    oscope::display_comparison_table(out, empty_entries);
+
+    EXPECT_NE(out.str().find("=== Scheduling Algorithm Comparison ==="), std::string::npos);
+    EXPECT_NE(out.str().find("No comparison results available (empty comparison entries)."), std::string::npos);
+}
+
+// 29. Comparison table: empty workload simulation results handled cleanly
+TEST(OScopeCLITest, ComparisonTableEmptyWorkloadHandledCleanly) {
+    std::vector<oscope::SchedulingComparisonEntry> entries = {
+        {"FCFS", {}, {}},
+        {"SJF", {}, {}}
+    };
+    std::ostringstream out;
+
+    oscope::display_comparison_table(out, entries);
+
+    EXPECT_NE(out.str().find("=== Scheduling Algorithm Comparison ==="), std::string::npos);
+    EXPECT_NE(out.str().find("No process metrics available to calculate averages (simulation result is empty)."), std::string::npos);
+}
+
+// 30. Comparison table: formatted output, decimal precision, and stream state preservation
+TEST(OScopeCLITest, ComparisonTableFormattedOutputAndStreamPreservation) {
+    oscope::SchedulingMetrics m1{1.67, 5.00, 1.00};
+    oscope::SchedulingMetrics m2{1.33, 4.67, 0.67};
+
+    oscope::SchedulingSimulationResult sim1;
+    sim1.process_results.push_back({1, 4, 4, 1, 0});
+    oscope::SchedulingSimulationResult sim2;
+    sim2.process_results.push_back({1, 4, 4, 1, 0});
+
+    std::vector<oscope::SchedulingComparisonEntry> entries = {
+        {"FCFS", sim1, m1},
+        {"SJF", sim2, m2}
+    };
+
+    std::ostringstream out;
+    out.precision(6);
+    auto initial_flags = out.flags();
+
+    oscope::display_comparison_table(out, entries);
+
+    const std::string s = out.str();
+    EXPECT_NE(s.find("=== Scheduling Algorithm Comparison ==="), std::string::npos);
+    EXPECT_NE(s.find("Algorithm"), std::string::npos);
+    EXPECT_NE(s.find("Avg Waiting"), std::string::npos);
+    EXPECT_NE(s.find("Avg Turnaround"), std::string::npos);
+    EXPECT_NE(s.find("Avg Response"), std::string::npos);
+
+    EXPECT_NE(s.find("FCFS"), std::string::npos);
+    EXPECT_NE(s.find("1.67"), std::string::npos);
+    EXPECT_NE(s.find("5.00"), std::string::npos);
+    EXPECT_NE(s.find("1.00"), std::string::npos);
+
+    EXPECT_NE(s.find("SJF"), std::string::npos);
+    EXPECT_NE(s.find("1.33"), std::string::npos);
+    EXPECT_NE(s.find("4.67"), std::string::npos);
+    EXPECT_NE(s.find("0.67"), std::string::npos);
+
+    EXPECT_EQ(out.precision(), 6);
+    EXPECT_EQ(out.flags(), initial_flags);
+}
+
+// 31. End-to-end interactive CLI test: Full comparison of all six algorithms
+TEST(OScopeCLITest, InteractiveComparisonRunsAllSixAlgorithms) {
+    // Select 7 (Compare All)
+    // Round Robin quantum: 2
+    // MLFQ quanta: 2, 4, 8
+    // 2 processes:
+    // P1: PID 1, Arr 0, Burst 4, Prio 2
+    // P2: PID 2, Arr 1, Burst 2, Prio 1
+    // Then 8 (Exit)
+    std::istringstream in("7\n2\n2\n4\n8\n2\n1\n0\n4\n2\n2\n1\n2\n1\n8\n");
+    std::ostringstream out;
+
+    int exit_code = oscope::run_cli(in, out);
+
+    EXPECT_EQ(exit_code, 0);
+    const std::string s = out.str();
+    EXPECT_NE(s.find("Selected: Compare All Scheduling Algorithms"), std::string::npos);
+    EXPECT_NE(s.find("Comparison completed successfully across 6 algorithm(s)."), std::string::npos);
+    EXPECT_NE(s.find("=== Scheduling Algorithm Comparison ==="), std::string::npos);
+    EXPECT_NE(s.find("FCFS"), std::string::npos);
+    EXPECT_NE(s.find("SJF"), std::string::npos);
+    EXPECT_NE(s.find("SRTF"), std::string::npos);
+    EXPECT_NE(s.find("Priority"), std::string::npos);
+    EXPECT_NE(s.find("Round Robin"), std::string::npos);
+    EXPECT_NE(s.find("MLFQ"), std::string::npos);
+    EXPECT_NE(s.find("Exiting OScope. Goodbye!"), std::string::npos);
+}
+
+// 32. Interactive comparison: invalid quanta rejection and recovery
+TEST(OScopeCLITest, InteractiveComparisonRecoversFromInvalidQuanta) {
+    // Select 7 (Compare All)
+    // RR quantum: 0 (rejected), -1 (rejected), 2 (accepted)
+    // MLFQ Q0: -3 (rejected), 2 (accepted)
+    // MLFQ Q1: 0 (rejected), 4 (accepted)
+    // MLFQ Q2: bad (rejected), 8 (accepted)
+    // 1 process: PID 1, Arr 0, Burst 3, Prio 1
+    // Then 8 (Exit)
+    std::istringstream in("7\n0\n-1\n2\n-3\n2\n0\n4\nbad\n8\n1\n1\n0\n3\n1\n8\n");
+    std::ostringstream out;
+
+    int exit_code = oscope::run_cli(in, out);
+
+    EXPECT_EQ(exit_code, 0);
+    const std::string s = out.str();
+    EXPECT_NE(s.find("Error: Value must be a positive integer (> 0)."), std::string::npos);
+    EXPECT_NE(s.find("Comparison completed successfully across 6 algorithm(s)."), std::string::npos);
+    EXPECT_NE(s.find("=== Scheduling Algorithm Comparison ==="), std::string::npos);
+}
+
+// 33. Interactive comparison: EOF during quantum input exits cleanly
+TEST(OScopeCLITest, InteractiveComparisonEofDuringQuantumExitsCleanly) {
+    // Select 7 (Compare All), then EOF
+    std::istringstream in("7\n");
+    std::ostringstream out;
+
+    int exit_code = oscope::run_cli(in, out);
+
+    EXPECT_EQ(exit_code, 0);
+    EXPECT_NE(out.str().find("End of input reached. Exiting OScope."), std::string::npos);
+}
+
+// 34. Interactive comparison: EOF during process input exits cleanly
+TEST(OScopeCLITest, InteractiveComparisonEofDuringProcessInputExitsCleanly) {
+    // Select 7 (Compare All), valid quanta, then EOF at process count
+    std::istringstream in("7\n2\n2\n4\n8\n");
+    std::ostringstream out;
+
+    int exit_code = oscope::run_cli(in, out);
+
+    EXPECT_EQ(exit_code, 0);
+    EXPECT_NE(out.str().find("End of input reached. Exiting OScope."), std::string::npos);
 }

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "oscope/process.hpp"
+#include "oscope/scheduling_comparison.hpp"
 #include "oscope/scheduling_simulation_result.hpp"
 
 namespace oscope {
@@ -18,7 +19,8 @@ enum class AlgorithmChoice {
     Priority = 4,
     RoundRobin = 5,
     MLFQ = 6,
-    Exit = 7
+    CompareAll = 7,
+    Exit = 8
 };
 
 // Input parsing and validation utilities
@@ -39,6 +41,7 @@ void display_execution_timeline(std::ostream& out, const SchedulingSimulationRes
 void display_process_metrics_table(std::ostream& out, const std::vector<Process>& processes, const SchedulingSimulationResult& result);
 void display_average_metrics(std::ostream& out, const SchedulingSimulationResult& result);
 void display_simulation_results(std::ostream& out, const std::vector<Process>& processes, const SchedulingSimulationResult& result);
+void display_comparison_table(std::ostream& out, const std::vector<SchedulingComparisonEntry>& entries);
 
 // Interactive CLI main entry point
 int run_cli(std::istream& in, std::ostream& out);

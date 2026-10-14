@@ -109,6 +109,10 @@ void print_relevant_fields_explanation(std::ostream& out, AlgorithmChoice choice
             out << "Selected: Multilevel Feedback Queue (MLFQ)\n"
                 << "Relevant fields: PID, Arrival Time, Burst Time. (Priority is ignored).\n";
             break;
+        case AlgorithmChoice::CompareAll:
+            out << "Selected: Compare All Scheduling Algorithms\n"
+                << "Relevant fields: PID, Arrival Time, Burst Time, Priority (Used by Priority scheduling).\n";
+            break;
         case AlgorithmChoice::Exit:
             break;
     }
@@ -154,7 +158,7 @@ std::optional<std::vector<Process>> read_processes(std::istream& in, std::ostrea
         }
 
         int priority = 0;
-        if (choice == AlgorithmChoice::Priority) {
+        if (choice == AlgorithmChoice::Priority || choice == AlgorithmChoice::CompareAll) {
             if (!read_int(in, out, "  Priority (lower numeric value = higher priority): ", priority)) {
                 return std::nullopt;
             }
@@ -181,18 +185,19 @@ void print_main_menu(std::ostream& out) {
         << "4. Run non-preemptive Priority\n"
         << "5. Run Round Robin\n"
         << "6. Run MLFQ\n"
-        << "7. Exit\n"
+        << "7. Compare all algorithms\n"
+        << "8. Exit\n"
         << "========================================\n";
 }
 
 std::optional<AlgorithmChoice> read_menu_choice(std::istream& in, std::ostream& out) {
     int choice_val = 0;
     while (true) {
-        if (!read_int(in, out, "Enter your choice (1-7): ", choice_val)) {
+        if (!read_int(in, out, "Enter your choice (1-8): ", choice_val)) {
             return std::nullopt;
         }
-        if (choice_val < 1 || choice_val > 7) {
-            out << "Error: Choice must be between 1 and 7.\n";
+        if (choice_val < 1 || choice_val > 8) {
+            out << "Error: Choice must be between 1 and 8.\n";
             continue;
         }
         return static_cast<AlgorithmChoice>(choice_val);
@@ -217,7 +222,7 @@ int run_cli(std::istream& in, std::ostream& out) {
 
         // Algorithm-specific configuration
         int rr_quantum = 0;
-        if (choice == AlgorithmChoice::RoundRobin) {
+        if (choice == AlgorithmChoice::RoundRobin || choice == AlgorithmChoice::CompareAll) {
             out << "\n[Round Robin Configuration]\n";
             if (!read_positive_int(in, out, "Enter time quantum: ", rr_quantum)) {
                 out << "\nEnd of input reached. Exiting OScope.\n";
@@ -228,7 +233,7 @@ int run_cli(std::istream& in, std::ostream& out) {
         int mlfq_q0 = 0;
         int mlfq_q1 = 0;
         int mlfq_q2 = 0;
-        if (choice == AlgorithmChoice::MLFQ) {
+        if (choice == AlgorithmChoice::MLFQ || choice == AlgorithmChoice::CompareAll) {
             out << "\n[MLFQ Configuration]\n";
             if (!read_positive_int(in, out, "Enter time quantum for Queue 0 (Q0): ", mlfq_q0) ||
                 !read_positive_int(in, out, "Enter time quantum for Queue 1 (Q1): ", mlfq_q1) ||
@@ -246,6 +251,33 @@ int run_cli(std::istream& in, std::ostream& out) {
         }
 
         const auto& processes = processes_opt.value();
+
+        if (choice == AlgorithmChoice::CompareAll) {
+            try {
+                std::string rr_name = "Round Robin (q=" + std::to_string(rr_quantum) + ")";
+                std::string mlfq_name = "MLFQ (q0=" + std::to_string(mlfq_q0) +
+                                        ", q1=" + std::to_string(mlfq_q1) +
+                                        ", q2=" + std::to_string(mlfq_q2) + ")";
+
+                std::vector<std::pair<std::string, std::shared_ptr<SchedulingAlgorithm>>> algorithms = {
+                    {"FCFS", std::make_shared<FCFS>()},
+                    {"SJF", std::make_shared<SJF>()},
+                    {"SRTF", std::make_shared<SRTF>()},
+                    {"Priority", std::make_shared<Priority>()},
+                    {rr_name, std::make_shared<RoundRobin>(rr_quantum)},
+                    {mlfq_name, std::make_shared<MLFQ>(mlfq_q0, mlfq_q1, mlfq_q2)}
+                };
+
+                auto comparison_entries = SchedulingComparator::compare(processes, algorithms);
+                out << "\nComparison completed successfully across "
+                    << comparison_entries.size() << " algorithm(s).\n";
+                display_comparison_table(out, comparison_entries);
+                out << "\n";
+            } catch (const std::exception& e) {
+                out << "\nComparison failed with error: " << e.what() << "\n\n";
+            }
+            continue;
+        }
 
         // Instantiate selected algorithm
         std::unique_ptr<SchedulingAlgorithm> algorithm;
@@ -268,6 +300,7 @@ int run_cli(std::istream& in, std::ostream& out) {
             case AlgorithmChoice::MLFQ:
                 algorithm = std::make_unique<MLFQ>(mlfq_q0, mlfq_q1, mlfq_q2);
                 break;
+            case AlgorithmChoice::CompareAll:
             case AlgorithmChoice::Exit:
                 return 0;
         }
@@ -391,6 +424,50 @@ void display_simulation_results(std::ostream& out, const std::vector<Process>& p
     display_execution_timeline(out, result);
     display_process_metrics_table(out, processes, result);
     display_average_metrics(out, result);
+}
+
+void display_comparison_table(std::ostream& out, const std::vector<SchedulingComparisonEntry>& entries) {
+    out << "\n=== Scheduling Algorithm Comparison ===\n";
+    if (entries.empty()) {
+        out << "No comparison results available (empty comparison entries).\n";
+        return;
+    }
+
+    bool all_empty = true;
+    for (const auto& entry : entries) {
+        if (!entry.simulation_result.process_results.empty()) {
+            all_empty = false;
+            break;
+        }
+    }
+    if (all_empty) {
+        out << "No process metrics available to calculate averages (simulation result is empty).\n";
+        return;
+    }
+
+    const auto orig_flags = out.flags();
+    const auto orig_prec = out.precision();
+
+    out << std::left << std::setw(26) << "Algorithm"
+        << std::right
+        << std::setw(14) << "Avg Waiting"
+        << std::setw(16) << "Avg Turnaround"
+        << std::setw(14) << "Avg Response"
+        << "\n";
+    out << std::string(70, '-') << "\n";
+
+    out << std::fixed << std::setprecision(2);
+    for (const auto& entry : entries) {
+        out << std::left << std::setw(26) << entry.algorithm_name
+            << std::right
+            << std::setw(14) << entry.average_waiting_time()
+            << std::setw(16) << entry.average_turnaround_time()
+            << std::setw(14) << entry.average_response_time()
+            << "\n";
+    }
+
+    out.flags(orig_flags);
+    out.precision(orig_prec);
 }
 
 } // namespace oscope
