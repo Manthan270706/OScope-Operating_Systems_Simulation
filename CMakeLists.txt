@@ -20,6 +20,7 @@ add_library(oscope_core
     src/scheduling_metrics.cpp
     src/scheduling_comparison.cpp
     src/paging/fifo.cpp
+    src/paging/lru.cpp
     src/cli.cpp
 )
 
@@ -73,6 +74,7 @@ add_executable(oscope_tests
     tests/scheduling_comparison_test.cpp
     tests/cli_test.cpp
     tests/paging_fifo_test.cpp
+    tests/paging_lru_test.cpp
 )
 
 target_link_libraries(oscope_tests
