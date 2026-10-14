@@ -9,7 +9,9 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
+#include "oscope/memory/allocation_strategy.hpp"
+#include "oscope/memory/memory_comparison.hpp"
+#include "oscope/memory/memory_manager.hpp"
 #include "oscope/paging/fifo.hpp"
 #include "oscope/paging/lru.hpp"
 #include "oscope/paging/optimal.hpp"
@@ -255,18 +257,19 @@ void print_main_menu(std::ostream& out) {
         << "6. Run MLFQ\n"
         << "7. Compare all scheduling algorithms\n"
         << "8. Page replacement (Paging)\n"
-        << "9. Exit\n"
+        << "9. Memory Allocation (Dynamic Partitioning)\n"
+        << "10. Exit\n"
         << "========================================\n";
 }
 
 std::optional<AlgorithmChoice> read_menu_choice(std::istream& in, std::ostream& out) {
     int choice_val = 0;
     while (true) {
-        if (!read_int(in, out, "Enter your choice (1-9): ", choice_val)) {
+        if (!read_int(in, out, "Enter your choice (1-10): ", choice_val)) {
             return std::nullopt;
         }
-        if (choice_val < 1 || choice_val > 9) {
-            out << "Error: Choice must be between 1 and 9.\n";
+        if (choice_val < 1 || choice_val > 10) {
+            out << "Error: Choice must be between 1 and 10.\n";
             continue;
         }
         return static_cast<AlgorithmChoice>(choice_val);
@@ -372,6 +375,253 @@ bool run_paging_cli(std::istream& in, std::ostream& out) {
     }
 }
 
+void print_memory_menu(std::ostream& out) {
+    out << "\n========================================\n"
+        << "           Memory Allocation            \n"
+        << "========================================\n"
+        << "1. First Fit\n"
+        << "2. Best Fit\n"
+        << "3. Worst Fit\n"
+        << "4. Compare all three strategies\n"
+        << "5. Return to main menu\n"
+        << "========================================\n";
+}
+
+std::optional<MemoryChoice> read_memory_choice(std::istream& in, std::ostream& out) {
+    int choice_val = 0;
+    while (true) {
+        if (!read_int(in, out, "Enter your choice (1-5): ", choice_val)) {
+            return std::nullopt;
+        }
+        if (choice_val < 1 || choice_val > 5) {
+            out << "Error: Choice must be between 1 and 5.\n";
+            continue;
+        }
+        return static_cast<MemoryChoice>(choice_val);
+    }
+}
+
+static bool read_operation_type(std::istream& in, std::ostream& out, MemoryOperationType& op_type) {
+    std::string line;
+    while (true) {
+        out << "  Operation type (1: Allocate, 2: Deallocate): ";
+        if (!std::getline(in, line)) {
+            return false;
+        }
+        const auto start = line.find_first_not_of(" \t\r\n");
+        if (start == std::string::npos) {
+            out << "Error: Input cannot be empty. Please enter 1 for Allocate or 2 for Deallocate.\n";
+            continue;
+        }
+        const auto end = line.find_last_not_of(" \t\r\n");
+        const std::string trimmed = line.substr(start, end - start + 1);
+
+        if (trimmed == "1" || trimmed == "a" || trimmed == "A" || trimmed == "allocate" || trimmed == "Allocate") {
+            op_type = MemoryOperationType::Allocate;
+            return true;
+        }
+        if (trimmed == "2" || trimmed == "d" || trimmed == "D" || trimmed == "deallocate" || trimmed == "Deallocate") {
+            op_type = MemoryOperationType::Deallocate;
+            return true;
+        }
+        out << "Error: Invalid operation type. Please enter 1 for Allocate or 2 for Deallocate.\n";
+    }
+}
+
+static bool read_optional_pid(std::istream& in, std::ostream& out, const std::string& prompt, std::optional<int>& pid_out) {
+    std::string line;
+    while (true) {
+        out << prompt;
+        if (!std::getline(in, line)) {
+            return false;
+        }
+        const auto start = line.find_first_not_of(" \t\r\n");
+        if (start == std::string::npos) {
+            pid_out = std::nullopt;
+            return true;
+        }
+        const auto end = line.find_last_not_of(" \t\r\n");
+        const std::string trimmed = line.substr(start, end - start + 1);
+
+        try {
+            std::size_t pos = 0;
+            long val = std::stol(trimmed, &pos);
+            if (pos != trimmed.size()) {
+                out << "Error: Trailing non-numeric characters detected. Please enter a valid integer.\n";
+                continue;
+            }
+            if (val < std::numeric_limits<int>::min() || val > std::numeric_limits<int>::max()) {
+                out << "Error: Number is out of integer range.\n";
+                continue;
+            }
+            int int_val = static_cast<int>(val);
+            if (int_val < 0) {
+                pid_out = std::nullopt;
+            } else {
+                pid_out = int_val;
+            }
+            return true;
+        } catch (const std::invalid_argument&) {
+            out << "Error: Invalid numeric input. Please enter an integer.\n";
+        } catch (const std::out_of_range&) {
+            out << "Error: Number is out of integer range.\n";
+        }
+    }
+}
+
+static bool read_memory_operation(std::istream& in, std::ostream& out, int op_num, int total_ops, MemoryOperation& op) {
+    out << "\n--- Operation " << op_num << " of " << total_ops << " ---\n";
+    MemoryOperationType op_type = MemoryOperationType::Allocate;
+    if (!read_operation_type(in, out, op_type)) {
+        return false;
+    }
+
+    if (op_type == MemoryOperationType::Allocate) {
+        int req_id = 0;
+        if (!read_positive_int(in, out, "    Logical Request ID: ", req_id)) {
+            return false;
+        }
+        int size_val = 0;
+        if (!read_positive_int(in, out, "    Allocation size (bytes): ", size_val)) {
+            return false;
+        }
+        std::optional<int> pid = std::nullopt;
+        if (!read_optional_pid(in, out, "    Process ID (or -1 if none): ", pid)) {
+            return false;
+        }
+        op = MemoryOperation::alloc(req_id, static_cast<std::size_t>(size_val), pid);
+        return true;
+    } else {
+        int req_id = 0;
+        if (!read_positive_int(in, out, "    Logical Request ID to deallocate: ", req_id)) {
+            return false;
+        }
+        op = MemoryOperation::dealloc(req_id);
+        return true;
+    }
+}
+
+bool run_memory_cli(std::istream& in, std::ostream& out) {
+    while (true) {
+        print_memory_menu(out);
+
+        auto choice_opt = read_memory_choice(in, out);
+        if (!choice_opt.has_value()) {
+            return false;
+        }
+
+        MemoryChoice choice = choice_opt.value();
+        if (choice == MemoryChoice::ReturnToMainMenu) {
+            return true;
+        }
+
+        int total_memory_val = 0;
+        if (!read_positive_int(in, out, "Enter total memory size (bytes): ", total_memory_val)) {
+            return false;
+        }
+        std::size_t total_memory = static_cast<std::size_t>(total_memory_val);
+
+        int op_count = 0;
+        if (!read_non_negative_int(in, out, "Enter number of operations: ", op_count)) {
+            return false;
+        }
+
+        if (choice == MemoryChoice::CompareAll) {
+            std::vector<MemoryOperation> workload;
+            workload.reserve(static_cast<std::size_t>(op_count));
+
+            for (int i = 1; i <= op_count; ++i) {
+                MemoryOperation op;
+                if (!read_memory_operation(in, out, i, op_count, op)) {
+                    return false;
+                }
+                workload.push_back(op);
+            }
+
+            try {
+                auto comp_result = MemoryComparator{}.compare(total_memory, workload);
+                out << "\nComparison completed successfully across "
+                    << comp_result.size() << " memory allocation strategies.\n";
+                display_memory_comparison_table(out, comp_result);
+                out << "\n";
+            } catch (const std::exception& e) {
+                out << "\nComparison failed with error: " << e.what() << "\n\n";
+            }
+            continue;
+        }
+
+        AllocationStrategy strategy = AllocationStrategy::FirstFit;
+        switch (choice) {
+            case MemoryChoice::FirstFit:
+                strategy = AllocationStrategy::FirstFit;
+                break;
+            case MemoryChoice::BestFit:
+                strategy = AllocationStrategy::BestFit;
+                break;
+            case MemoryChoice::WorstFit:
+                strategy = AllocationStrategy::WorstFit;
+                break;
+            case MemoryChoice::CompareAll:
+            case MemoryChoice::ReturnToMainMenu:
+                return true;
+        }
+
+        std::string strategy_name = std::string(to_string(strategy));
+        out << "\n[" << strategy_name << " Memory Allocation]\n";
+
+        MemoryManager manager(total_memory, strategy);
+        std::unordered_map<int, int> active_allocations;
+
+        for (int i = 1; i <= op_count; ++i) {
+            MemoryOperation op;
+            if (!read_memory_operation(in, out, i, op_count, op)) {
+                return false;
+            }
+
+            if (op.type == MemoryOperationType::Allocate) {
+                if (active_allocations.find(op.request_id) != active_allocations.end()) {
+                    out << "Allocation failed: Duplicate active logical request ID "
+                        << op.request_id << ".\n";
+                } else {
+                    AllocationResult alloc_res =
+                        manager.allocate(op.size, strategy, op.process_id);
+                    if (alloc_res.success) {
+                        active_allocations[op.request_id] = alloc_res.allocation_id.value();
+                        out << "Allocation successful: Request ID " << op.request_id
+                            << " allocated at address " << alloc_res.start_address
+                            << " (" << alloc_res.size << " bytes, Internal ID: "
+                            << alloc_res.allocation_id.value() << ").\n";
+                    } else {
+                        out << "Allocation failed for request ID " << op.request_id
+                            << ": " << alloc_res.error_message << "\n";
+                    }
+                }
+            } else {
+                auto it = active_allocations.find(op.request_id);
+                if (it == active_allocations.end()) {
+                    out << "Deallocation failed: Request ID " << op.request_id
+                        << " is not active.\n";
+                } else {
+                    int actual_id = it->second;
+                    bool freed = manager.deallocate(actual_id);
+                    if (freed) {
+                        active_allocations.erase(it);
+                        out << "Deallocation successful: Request ID " << op.request_id
+                            << " (Internal ID: " << actual_id << ") freed.\n";
+                    } else {
+                        out << "Deallocation failed: Internal allocation ID "
+                            << actual_id << " could not be freed.\n";
+                    }
+                }
+            }
+        }
+
+        display_memory_blocks(out, manager.blocks());
+        display_memory_metrics(out, manager.calculate_metrics());
+        out << "\n";
+    }
+}
+
 int run_cli(std::istream& in, std::ostream& out) {
     while (true) {
         print_main_menu(out);
@@ -390,6 +640,14 @@ int run_cli(std::istream& in, std::ostream& out) {
 
         if (choice == AlgorithmChoice::Paging) {
             if (!run_paging_cli(in, out)) {
+                out << "\nEnd of input reached. Exiting OScope.\n";
+                return 0;
+            }
+            continue;
+        }
+
+        if (choice == AlgorithmChoice::MemoryAllocation) {
+            if (!run_memory_cli(in, out)) {
                 out << "\nEnd of input reached. Exiting OScope.\n";
                 return 0;
             }
@@ -744,6 +1002,111 @@ void display_paging_comparison_table(std::ostream& out, const PageReplacementCom
             << std::setw(8) << entry.page_hits()
             << std::setw(14) << (entry.fault_rate() * 100.0) << "%"
             << std::setw(14) << (entry.hit_rate() * 100.0) << "%"
+            << "\n";
+    }
+
+    out.flags(orig_flags);
+    out.precision(orig_prec);
+}
+
+void display_memory_blocks(std::ostream& out, const std::vector<MemoryBlock>& blocks) {
+    out << "\n=== Memory Block Layout ===\n";
+    if (blocks.empty()) {
+        out << "No memory blocks available.\n";
+        return;
+    }
+
+    const auto orig_flags = out.flags();
+
+    out << std::left << std::setw(8) << "Block"
+        << std::setw(16) << "Start Address"
+        << std::setw(12) << "Size (B)"
+        << std::setw(12) << "Status"
+        << std::setw(12) << "Alloc ID"
+        << std::setw(10) << "PID"
+        << "\n";
+    out << std::string(70, '-') << "\n";
+
+    for (std::size_t i = 0; i < blocks.size(); ++i) {
+        const auto& block = blocks[i];
+        out << std::left << std::setw(8) << (i + 1)
+            << std::setw(16) << block.start_address
+            << std::setw(12) << block.size
+            << std::setw(12) << (block.is_allocated ? "Allocated" : "Free");
+
+        if (block.allocation_id.has_value()) {
+            out << std::setw(12) << block.allocation_id.value();
+        } else {
+            out << std::setw(12) << "-";
+        }
+
+        if (block.process_id.has_value()) {
+            out << std::setw(10) << block.process_id.value();
+        } else {
+            out << std::setw(10) << "-";
+        }
+
+        out << "\n";
+    }
+
+    out.flags(orig_flags);
+}
+
+void display_memory_metrics(std::ostream& out, const MemoryMetrics& metrics) {
+    out << "\n=== Memory Allocation Metrics ===\n";
+    const auto orig_flags = out.flags();
+    const auto orig_prec = out.precision();
+
+    out << std::fixed << std::setprecision(2);
+    out << "Total Memory:           " << metrics.total_memory << " bytes\n"
+        << "Allocated Memory:       " << metrics.allocated_memory << " bytes\n"
+        << "Free Memory:            " << metrics.free_memory << " bytes\n"
+        << "Largest Free Block:     " << metrics.largest_free_block << " bytes\n"
+        << "External Fragmentation: " << (metrics.external_fragmentation * 100.0) << "% ("
+        << metrics.external_fragmentation << ")\n";
+
+    out.flags(orig_flags);
+    out.precision(orig_prec);
+}
+
+void display_memory_comparison_table(std::ostream& out, const MemoryComparisonResult& result) {
+    out << "\n=== Memory Allocation Strategy Comparison ===\n";
+    if (result.empty()) {
+        out << "No comparison results available (empty comparison entries).\n";
+        return;
+    }
+
+    out << "Total Memory: " << result.total_memory << " bytes"
+        << " | Total Workload Operations: " << result.workload.size() << "\n\n";
+
+    const auto orig_flags = out.flags();
+    const auto orig_prec = out.precision();
+
+    out << std::left << std::setw(12) << "Strategy"
+        << std::right
+        << std::setw(10) << "Attempts"
+        << std::setw(10) << "Success"
+        << std::setw(10) << "Failures"
+        << std::setw(14) << "Success Rate"
+        << std::setw(14) << "Allocated (B)"
+        << std::setw(12) << "Free (B)"
+        << std::setw(14) << "Largest Free"
+        << std::setw(12) << "Ext Frag"
+        << "\n";
+    out << std::string(98, '-') << "\n";
+
+    out << std::fixed << std::setprecision(2);
+    for (const auto& entry : result.entries) {
+        out << std::left << std::setw(12) << entry.strategy_name
+            << std::right
+            << std::setw(10) << entry.allocation_requests_attempted
+            << std::setw(10) << entry.successful_allocations
+            << std::setw(10) << entry.failed_allocations
+            << std::setw(13) << (entry.allocation_success_rate * 100.0) << "%"
+            << std::setw(14) << entry.final_allocated_memory()
+            << std::setw(12) << entry.final_free_memory()
+            << std::setw(14) << entry.final_largest_free_block()
+            << std::setw(11) << (entry.final_external_fragmentation() * 100.0) << "%"
             << "\n";
     }
 

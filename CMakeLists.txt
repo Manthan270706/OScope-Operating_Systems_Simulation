@@ -86,6 +86,7 @@ add_executable(oscope_tests
     tests/process_manager_test.cpp
     tests/memory_allocation_test.cpp
     tests/memory_comparison_test.cpp
+    tests/memory_cli_test.cpp
 )
 
 target_link_libraries(oscope_tests

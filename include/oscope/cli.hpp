@@ -6,6 +6,9 @@
 #include <string>
 #include <vector>
 
+#include "oscope/memory/allocation_result.hpp"
+#include "oscope/memory/memory_block.hpp"
+#include "oscope/memory/memory_comparison.hpp"
 #include "oscope/paging/page_replacement_comparison.hpp"
 #include "oscope/paging/page_replacement_result.hpp"
 #include "oscope/process.hpp"
@@ -23,13 +26,22 @@ enum class AlgorithmChoice {
     MLFQ = 6,
     CompareAll = 7,
     Paging = 8,
-    Exit = 9
+    MemoryAllocation = 9,
+    Exit = 10
 };
 
 enum class PagingChoice {
     FIFO = 1,
     LRU = 2,
     Optimal = 3,
+    CompareAll = 4,
+    ReturnToMainMenu = 5
+};
+
+enum class MemoryChoice {
+    FirstFit = 1,
+    BestFit = 2,
+    WorstFit = 3,
     CompareAll = 4,
     ReturnToMainMenu = 5
 };
@@ -51,6 +63,9 @@ std::optional<AlgorithmChoice> read_menu_choice(std::istream& in, std::ostream& 
 void print_paging_menu(std::ostream& out);
 std::optional<PagingChoice> read_paging_choice(std::istream& in, std::ostream& out);
 
+void print_memory_menu(std::ostream& out);
+std::optional<MemoryChoice> read_memory_choice(std::istream& in, std::ostream& out);
+
 // CPU Scheduling results and metrics display
 void display_execution_timeline(std::ostream& out, const SchedulingSimulationResult& result);
 void display_process_metrics_table(std::ostream& out, const std::vector<Process>& processes, const SchedulingSimulationResult& result);
@@ -64,8 +79,14 @@ void display_paging_metrics(std::ostream& out, const PageReplacementResult& resu
 void display_paging_simulation_results(std::ostream& out, const PageReplacementResult& result, int frame_count);
 void display_paging_comparison_table(std::ostream& out, const PageReplacementComparisonResult& result);
 
+// Memory results and metrics display
+void display_memory_blocks(std::ostream& out, const std::vector<MemoryBlock>& blocks);
+void display_memory_metrics(std::ostream& out, const MemoryMetrics& metrics);
+void display_memory_comparison_table(std::ostream& out, const MemoryComparisonResult& result);
+
 // Interactive CLI entry points
 bool run_paging_cli(std::istream& in, std::ostream& out);
+bool run_memory_cli(std::istream& in, std::ostream& out);
 int run_cli(std::istream& in, std::ostream& out);
 
 } // namespace oscope

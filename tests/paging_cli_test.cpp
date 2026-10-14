@@ -10,8 +10,8 @@
 
 // 1. Navigation: Enter Paging menu and return cleanly to main menu
 TEST(OScopePagingCLITest, EntersPagingMenuAndReturnsToMainMenu) {
-    // 8 (Paging), 5 (Return to main menu), 9 (Exit)
-    std::istringstream in("8\n5\n9\n");
+    // 8 (Paging), 5 (Return to main menu), 10 (Exit)
+    std::istringstream in("8\n5\n10\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -34,8 +34,8 @@ TEST(OScopePagingCLITest, RunsFifoSimulationSuccessfully) {
     // 3 (frames)
     // 7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1 (textbook string)
     // 5 (Return to main menu)
-    // 9 (Exit)
-    std::istringstream in("8\n1\n3\n7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1\n5\n9\n");
+    // 10 (Exit)
+    std::istringstream in("8\n1\n3\n7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1\n5\n10\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -72,8 +72,8 @@ TEST(OScopePagingCLITest, RunsLruSimulationSuccessfully) {
     // 3 (frames)
     // 7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1
     // 5 (Return to main menu)
-    // 9 (Exit)
-    std::istringstream in("8\n2\n3\n7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1\n5\n9\n");
+    // 10 (Exit)
+    std::istringstream in("8\n2\n3\n7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1\n5\n10\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -95,8 +95,8 @@ TEST(OScopePagingCLITest, RunsOptimalSimulationSuccessfully) {
     // 3 (frames)
     // 7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1
     // 5 (Return to main menu)
-    // 9 (Exit)
-    std::istringstream in("8\n3\n3\n7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1\n5\n9\n");
+    // 10 (Exit)
+    std::istringstream in("8\n3\n3\n7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1\n5\n10\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -118,8 +118,8 @@ TEST(OScopePagingCLITest, RunsPageReplacementComparisonSuccessfully) {
     // 3 (frames)
     // 7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1
     // 5 (Return to main menu)
-    // 9 (Exit)
-    std::istringstream in("8\n4\n3\n7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1\n5\n9\n");
+    // 10 (Exit)
+    std::istringstream in("8\n4\n3\n7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1\n5\n10\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -139,8 +139,8 @@ TEST(OScopePagingCLITest, RunsPageReplacementComparisonSuccessfully) {
 
 // 6. Handle empty reference string in interactive simulation
 TEST(OScopePagingCLITest, HandlesEmptyReferenceString) {
-    // 8 (Paging), 1 (FIFO), 3 (frames), empty line for reference string, 5, 9
-    std::istringstream in("8\n1\n3\n\n5\n9\n");
+    // 8 (Paging), 1 (FIFO), 3 (frames), empty line for reference string, 5, 10
+    std::istringstream in("8\n1\n3\n\n5\n10\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -158,8 +158,8 @@ TEST(OScopePagingCLITest, RejectsInvalidFrameCountsAndRecovers) {
     // 8 (Paging), 1 (FIFO)
     // Frame count: 0 (rejected), -2 (rejected), "bad" (rejected), 3 (accepted)
     // ref: 1 2 3
-    // 5, 9
-    std::istringstream in("8\n1\n0\n-2\nbad\n3\n1 2 3\n5\n9\n");
+    // 5, 10
+    std::istringstream in("8\n1\n0\n-2\nbad\n3\n1 2 3\n5\n10\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -175,8 +175,8 @@ TEST(OScopePagingCLITest, RejectsInvalidFrameCountsAndRecovers) {
 TEST(OScopePagingCLITest, RejectsNegativePageNumbersAndRecovers) {
     // 8 (Paging), 1 (FIFO), 2 (frames)
     // Ref: "1 -4 2" (rejected), then "1 4 2" (accepted)
-    // 5, 9
-    std::istringstream in("8\n1\n2\n1 -4 2\n1 4 2\n5\n9\n");
+    // 5, 10
+    std::istringstream in("8\n1\n2\n1 -4 2\n1 4 2\n5\n10\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -191,8 +191,8 @@ TEST(OScopePagingCLITest, RejectsNegativePageNumbersAndRecovers) {
 TEST(OScopePagingCLITest, RejectsMalformedReferenceStringTokensAndRecovers) {
     // 8 (Paging), 1 (FIFO), 2 (frames)
     // Ref: "1 abc 2" (rejected), "1 2a 3" (rejected), then "1 2 3" (accepted)
-    // 5, 9
-    std::istringstream in("8\n1\n2\n1 abc 2\n1 2a 3\n1 2 3\n5\n9\n");
+    // 5, 10
+    std::istringstream in("8\n1\n2\n1 abc 2\n1 2a 3\n1 2 3\n5\n10\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -208,8 +208,8 @@ TEST(OScopePagingCLITest, RejectsMalformedReferenceStringTokensAndRecovers) {
 TEST(OScopePagingCLITest, RejectsInvalidPagingMenuChoiceAndRecovers) {
     // 8 (Paging)
     // Choice: 0 (rejected), 6 (rejected), "xyz" (rejected), 5 (return)
-    // 9 (Exit)
-    std::istringstream in("8\n0\n6\nxyz\n5\n9\n");
+    // 10 (Exit)
+    std::istringstream in("8\n0\n6\nxyz\n5\n10\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
