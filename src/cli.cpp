@@ -1,4 +1,5 @@
 #include "oscope/cli.hpp"
+#include "oscope/reporting/experiment_reporter.hpp"
 
 #include <iomanip>
 #include <iostream>
@@ -649,47 +650,79 @@ std::optional<ExperimentChoice> read_experiment_choice(std::istream& in, std::os
     }
 }
 
-bool run_experiments_cli(std::istream& in, std::ostream& out) {
-    while (true) {
-        print_experiments_menu(out);
+bool run_experiments_cli(
+    std::istream& in,
+    std::ostream& out,
+    OutputFormat format,
+    std::vector<reporting::JsonValue>* json_accumulator) {
 
-        auto choice_opt = read_experiment_choice(in, out);
+    std::ostream& prompt_stream = (format == OutputFormat::Json) ? std::cerr : out;
+    std::vector<reporting::JsonValue> local_accumulator;
+    std::vector<reporting::JsonValue>& target_accumulator =
+        json_accumulator ? *json_accumulator : local_accumulator;
+
+    while (true) {
+        print_experiments_menu(prompt_stream);
+
+        auto choice_opt = read_experiment_choice(in, prompt_stream);
         if (!choice_opt.has_value()) {
+            if (format == OutputFormat::Json && !json_accumulator) {
+                out << reporting::JsonValue::array(std::move(target_accumulator)).serialize(true) << "\n";
+            }
             return false;
         }
 
         ExperimentChoice choice = choice_opt.value();
         if (choice == ExperimentChoice::ReturnToMainMenu) {
+            if (format == OutputFormat::Json && !json_accumulator) {
+                out << reporting::JsonValue::array(std::move(target_accumulator)).serialize(true) << "\n";
+            }
             return true;
         }
 
         switch (choice) {
             case ExperimentChoice::ProcessCreation: {
-                out << "\n[Linux/POSIX Process Creation Experiment]\n";
                 auto result = experiments::run_process_experiment();
-                display_process_experiment_result(out, result);
-                out << "\n";
+                if (format == OutputFormat::Json) {
+                    target_accumulator.push_back(reporting::to_json(result));
+                } else {
+                    out << "\n[Linux/POSIX Process Creation Experiment]\n";
+                    display_process_experiment_result(out, result, format);
+                    out << "\n";
+                }
                 break;
             }
             case ExperimentChoice::ThreadCreation: {
-                out << "\n[Linux/POSIX Thread Creation Experiment]\n";
                 auto result = experiments::run_thread_experiment();
-                display_thread_experiment_result(out, result);
-                out << "\n";
+                if (format == OutputFormat::Json) {
+                    target_accumulator.push_back(reporting::to_json(result));
+                } else {
+                    out << "\n[Linux/POSIX Thread Creation Experiment]\n";
+                    display_thread_experiment_result(out, result, format);
+                    out << "\n";
+                }
                 break;
             }
             case ExperimentChoice::ThreadSynchronization: {
-                out << "\n[Linux/POSIX Thread Synchronization Experiment]\n";
                 auto result = experiments::run_synchronization_experiment();
-                display_synchronization_experiment_result(out, result);
-                out << "\n";
+                if (format == OutputFormat::Json) {
+                    target_accumulator.push_back(reporting::to_json(result));
+                } else {
+                    out << "\n[Linux/POSIX Thread Synchronization Experiment]\n";
+                    display_synchronization_experiment_result(out, result, format);
+                    out << "\n";
+                }
                 break;
             }
             case ExperimentChoice::PipeIpc: {
-                out << "\n[Linux/POSIX Pipe-based IPC Experiment]\n";
                 auto result = experiments::run_pipe_ipc_experiment();
-                display_pipe_ipc_experiment_result(out, result);
-                out << "\n";
+                if (format == OutputFormat::Json) {
+                    target_accumulator.push_back(reporting::to_json(result));
+                } else {
+                    out << "\n[Linux/POSIX Pipe-based IPC Experiment]\n";
+                    display_pipe_ipc_experiment_result(out, result, format);
+                    out << "\n";
+                }
                 break;
             }
             case ExperimentChoice::ReturnToMainMenu:
@@ -698,41 +731,70 @@ bool run_experiments_cli(std::istream& in, std::ostream& out) {
     }
 }
 
-int run_cli(std::istream& in, std::ostream& out) {
-    while (true) {
-        print_main_menu(out);
+int run_cli(std::istream& in, std::ostream& out, OutputFormat format) {
+    std::ostream& prompt_stream = (format == OutputFormat::Json) ? std::cerr : out;
+    std::vector<reporting::JsonValue> json_results;
 
-        auto choice_opt = read_menu_choice(in, out);
+    auto finalize_json = [&]() {
+        if (format == OutputFormat::Json) {
+            out << reporting::JsonValue::array(std::move(json_results)).serialize(true) << "\n";
+        }
+    };
+
+    while (true) {
+        print_main_menu(prompt_stream);
+
+        auto choice_opt = read_menu_choice(in, prompt_stream);
         if (!choice_opt.has_value()) {
-            out << "\nEnd of input reached. Exiting OScope.\n";
+            if (format == OutputFormat::HumanReadable) {
+                out << "\nEnd of input reached. Exiting OScope.\n";
+            } else {
+                finalize_json();
+            }
             return 0;
         }
 
         AlgorithmChoice choice = choice_opt.value();
         if (choice == AlgorithmChoice::Exit) {
-            out << "\nExiting OScope. Goodbye!\n";
+            if (format == OutputFormat::HumanReadable) {
+                out << "\nExiting OScope. Goodbye!\n";
+            } else {
+                finalize_json();
+            }
             return 0;
         }
 
         if (choice == AlgorithmChoice::Paging) {
-            if (!run_paging_cli(in, out)) {
-                out << "\nEnd of input reached. Exiting OScope.\n";
+            if (!run_paging_cli(in, prompt_stream)) {
+                if (format == OutputFormat::HumanReadable) {
+                    out << "\nEnd of input reached. Exiting OScope.\n";
+                } else {
+                    finalize_json();
+                }
                 return 0;
             }
             continue;
         }
 
         if (choice == AlgorithmChoice::MemoryAllocation) {
-            if (!run_memory_cli(in, out)) {
-                out << "\nEnd of input reached. Exiting OScope.\n";
+            if (!run_memory_cli(in, prompt_stream)) {
+                if (format == OutputFormat::HumanReadable) {
+                    out << "\nEnd of input reached. Exiting OScope.\n";
+                } else {
+                    finalize_json();
+                }
                 return 0;
             }
             continue;
         }
 
         if (choice == AlgorithmChoice::LinuxExperiments) {
-            if (!run_experiments_cli(in, out)) {
-                out << "\nEnd of input reached. Exiting OScope.\n";
+            if (!run_experiments_cli(in, out, format, &json_results)) {
+                if (format == OutputFormat::HumanReadable) {
+                    out << "\nEnd of input reached. Exiting OScope.\n";
+                } else {
+                    finalize_json();
+                }
                 return 0;
             }
             continue;
@@ -1198,7 +1260,15 @@ void display_memory_comparison_table(std::ostream& out, const MemoryComparisonRe
     out.precision(orig_prec);
 }
 
-void display_process_experiment_result(std::ostream& out, const experiments::ProcessExperimentResult& result) {
+void display_process_experiment_result(
+    std::ostream& out,
+    const experiments::ProcessExperimentResult& result,
+    OutputFormat format) {
+    if (format == OutputFormat::Json) {
+        out << reporting::serialize_result(result, true) << "\n";
+        return;
+    }
+
     out << "=== Process Creation Experiment Result ===\n";
     out << "Status:                 " << (result.is_success() ? "SUCCESS" : "FAILURE") << "\n";
     out << "Parent PID:             " << result.parent_pid << "\n";
@@ -1217,7 +1287,15 @@ void display_process_experiment_result(std::ostream& out, const experiments::Pro
     out << "Details:                " << result.message << "\n";
 }
 
-void display_thread_experiment_result(std::ostream& out, const experiments::ThreadExperimentResult& result) {
+void display_thread_experiment_result(
+    std::ostream& out,
+    const experiments::ThreadExperimentResult& result,
+    OutputFormat format) {
+    if (format == OutputFormat::Json) {
+        out << reporting::serialize_result(result, true) << "\n";
+        return;
+    }
+
     out << "=== Thread Creation Experiment Result ===\n";
     out << "Status:                 " << (result.success ? "SUCCESS" : "FAILURE") << "\n";
     out << "Requested Threads:      " << result.requested_threads << "\n";
@@ -1234,7 +1312,15 @@ void display_thread_experiment_result(std::ostream& out, const experiments::Thre
     }
 }
 
-void display_synchronization_experiment_result(std::ostream& out, const experiments::SynchronizationExperimentResult& result) {
+void display_synchronization_experiment_result(
+    std::ostream& out,
+    const experiments::SynchronizationExperimentResult& result,
+    OutputFormat format) {
+    if (format == OutputFormat::Json) {
+        out << reporting::serialize_result(result, true) << "\n";
+        return;
+    }
+
     out << "=== Thread Synchronization Experiment Result ===\n";
     out << "Status:                 " << (result.success ? "SUCCESS" : "FAILURE") << "\n";
     out << "Concurrent Threads:     " << result.num_threads << "\n";
@@ -1249,7 +1335,15 @@ void display_synchronization_experiment_result(std::ostream& out, const experime
     }
 }
 
-void display_pipe_ipc_experiment_result(std::ostream& out, const experiments::PipeIpcExperimentResult& result) {
+void display_pipe_ipc_experiment_result(
+    std::ostream& out,
+    const experiments::PipeIpcExperimentResult& result,
+    OutputFormat format) {
+    if (format == OutputFormat::Json) {
+        out << reporting::serialize_result(result, true) << "\n";
+        return;
+    }
+
     out << "=== Pipe-based IPC Experiment Result ===\n";
     out << "Status:                 " << (result.is_success() ? "SUCCESS" : "FAILURE") << "\n";
     out << "Direction:              Child -> Parent (POSIX pipe)\n";

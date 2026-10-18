@@ -10,6 +10,7 @@
 #include "oscope/experiments/process_experiment.hpp"
 #include "oscope/experiments/synchronization_experiment.hpp"
 #include "oscope/experiments/thread_experiment.hpp"
+#include "oscope/reporting/json_value.hpp"
 #include "oscope/memory/allocation_result.hpp"
 #include "oscope/memory/memory_block.hpp"
 #include "oscope/memory/memory_comparison.hpp"
@@ -59,6 +60,11 @@ enum class ExperimentChoice {
     ReturnToMainMenu = 5
 };
 
+enum class OutputFormat {
+    HumanReadable,
+    Json
+};
+
 // Input parsing and validation utilities
 bool read_int(std::istream& in, std::ostream& out, const std::string& prompt, int& value);
 bool read_positive_int(std::istream& in, std::ostream& out, const std::string& prompt, int& value);
@@ -101,16 +107,20 @@ void display_memory_metrics(std::ostream& out, const MemoryMetrics& metrics);
 void display_memory_comparison_table(std::ostream& out, const MemoryComparisonResult& result);
 
 // Linux/POSIX Experiments results display
-void display_process_experiment_result(std::ostream& out, const experiments::ProcessExperimentResult& result);
-void display_thread_experiment_result(std::ostream& out, const experiments::ThreadExperimentResult& result);
-void display_synchronization_experiment_result(std::ostream& out, const experiments::SynchronizationExperimentResult& result);
-void display_pipe_ipc_experiment_result(std::ostream& out, const experiments::PipeIpcExperimentResult& result);
+void display_process_experiment_result(std::ostream& out, const experiments::ProcessExperimentResult& result, OutputFormat format = OutputFormat::HumanReadable);
+void display_thread_experiment_result(std::ostream& out, const experiments::ThreadExperimentResult& result, OutputFormat format = OutputFormat::HumanReadable);
+void display_synchronization_experiment_result(std::ostream& out, const experiments::SynchronizationExperimentResult& result, OutputFormat format = OutputFormat::HumanReadable);
+void display_pipe_ipc_experiment_result(std::ostream& out, const experiments::PipeIpcExperimentResult& result, OutputFormat format = OutputFormat::HumanReadable);
 
 // Interactive CLI entry points
 bool run_paging_cli(std::istream& in, std::ostream& out);
 bool run_memory_cli(std::istream& in, std::ostream& out);
-bool run_experiments_cli(std::istream& in, std::ostream& out);
-int run_cli(std::istream& in, std::ostream& out);
+bool run_experiments_cli(
+    std::istream& in,
+    std::ostream& out,
+    OutputFormat format = OutputFormat::HumanReadable,
+    std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+int run_cli(std::istream& in, std::ostream& out, OutputFormat format = OutputFormat::HumanReadable);
 
 } // namespace oscope
 

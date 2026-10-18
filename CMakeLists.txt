@@ -32,6 +32,8 @@ add_library(oscope_core
     src/experiments/thread_experiment.cpp
     src/experiments/synchronization_experiment.cpp
     src/experiments/pipe_ipc_experiment.cpp
+    src/reporting/json_value.cpp
+    src/reporting/experiment_reporter.cpp
     src/cli.cpp
 )
 
@@ -103,6 +105,7 @@ add_executable(oscope_tests
     tests/synchronization_experiment_test.cpp
     tests/pipe_ipc_experiment_test.cpp
     tests/experiments_cli_test.cpp
+    tests/experiment_reporting_test.cpp
 )
 
 target_link_libraries(oscope_tests
@@ -114,6 +117,11 @@ target_link_libraries(oscope_tests
 target_include_directories(oscope_tests
     PRIVATE
     ${PROJECT_SOURCE_DIR}/include
+)
+
+target_compile_definitions(oscope_tests
+    PRIVATE
+    OSCOPE_EXECUTABLE_PATH="$<TARGET_FILE:oscope>"
 )
 
 include(GoogleTest)
