@@ -6,6 +6,10 @@
 #include <string>
 #include <vector>
 
+#include "oscope/experiments/pipe_ipc_experiment.hpp"
+#include "oscope/experiments/process_experiment.hpp"
+#include "oscope/experiments/synchronization_experiment.hpp"
+#include "oscope/experiments/thread_experiment.hpp"
 #include "oscope/memory/allocation_result.hpp"
 #include "oscope/memory/memory_block.hpp"
 #include "oscope/memory/memory_comparison.hpp"
@@ -27,7 +31,8 @@ enum class AlgorithmChoice {
     CompareAll = 7,
     Paging = 8,
     MemoryAllocation = 9,
-    Exit = 10
+    LinuxExperiments = 10,
+    Exit = 11
 };
 
 enum class PagingChoice {
@@ -43,6 +48,14 @@ enum class MemoryChoice {
     BestFit = 2,
     WorstFit = 3,
     CompareAll = 4,
+    ReturnToMainMenu = 5
+};
+
+enum class ExperimentChoice {
+    ProcessCreation = 1,
+    ThreadCreation = 2,
+    ThreadSynchronization = 3,
+    PipeIpc = 4,
     ReturnToMainMenu = 5
 };
 
@@ -66,6 +79,9 @@ std::optional<PagingChoice> read_paging_choice(std::istream& in, std::ostream& o
 void print_memory_menu(std::ostream& out);
 std::optional<MemoryChoice> read_memory_choice(std::istream& in, std::ostream& out);
 
+void print_experiments_menu(std::ostream& out);
+std::optional<ExperimentChoice> read_experiment_choice(std::istream& in, std::ostream& out);
+
 // CPU Scheduling results and metrics display
 void display_execution_timeline(std::ostream& out, const SchedulingSimulationResult& result);
 void display_process_metrics_table(std::ostream& out, const std::vector<Process>& processes, const SchedulingSimulationResult& result);
@@ -84,9 +100,16 @@ void display_memory_blocks(std::ostream& out, const std::vector<MemoryBlock>& bl
 void display_memory_metrics(std::ostream& out, const MemoryMetrics& metrics);
 void display_memory_comparison_table(std::ostream& out, const MemoryComparisonResult& result);
 
+// Linux/POSIX Experiments results display
+void display_process_experiment_result(std::ostream& out, const experiments::ProcessExperimentResult& result);
+void display_thread_experiment_result(std::ostream& out, const experiments::ThreadExperimentResult& result);
+void display_synchronization_experiment_result(std::ostream& out, const experiments::SynchronizationExperimentResult& result);
+void display_pipe_ipc_experiment_result(std::ostream& out, const experiments::PipeIpcExperimentResult& result);
+
 // Interactive CLI entry points
 bool run_paging_cli(std::istream& in, std::ostream& out);
 bool run_memory_cli(std::istream& in, std::ostream& out);
+bool run_experiments_cli(std::istream& in, std::ostream& out);
 int run_cli(std::istream& in, std::ostream& out);
 
 } // namespace oscope

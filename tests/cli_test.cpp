@@ -5,9 +5,9 @@
 
 #include "oscope/cli.hpp"
 
-// 1. Clean exit on selecting Option 10
+// 1. Clean exit on selecting Option 11
 TEST(OScopeCLITest, ExitOptionTerminatesCleanly) {
-    std::istringstream in("10\n");
+    std::istringstream in("11\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -29,8 +29,8 @@ TEST(OScopeCLITest, EofAtMainMenuTerminatesCleanly) {
 
 // 3. Recovery from non-numeric menu input
 TEST(OScopeCLITest, RecoversFromNonNumericMenuInput) {
-    // User enters "abc", then "xyz123", then "10" (Exit)
-    std::istringstream in("abc\nxyz123\n10\n");
+    // User enters "abc", then "xyz123", then "11" (Exit)
+    std::istringstream in("abc\nxyz123\n11\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -42,14 +42,14 @@ TEST(OScopeCLITest, RecoversFromNonNumericMenuInput) {
 
 // 4. Rejection of out-of-range menu choice
 TEST(OScopeCLITest, RejectsOutOfRangeMenuChoice) {
-    // User enters 0, then 11, then 10 (Exit)
-    std::istringstream in("0\n11\n10\n");
+    // User enters 0, then 12, then 11 (Exit)
+    std::istringstream in("0\n12\n11\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
 
     EXPECT_EQ(exit_code, 0);
-    EXPECT_NE(out.str().find("Error: Choice must be between 1 and 10."), std::string::npos);
+    EXPECT_NE(out.str().find("Error: Choice must be between 1 and 11."), std::string::npos);
     EXPECT_NE(out.str().find("Exiting OScope. Goodbye!"), std::string::npos);
 }
 
@@ -138,8 +138,8 @@ TEST(OScopeCLITest, RunsFCFSSimulationSuccessfully) {
     // 2 processes:
     // P1: PID 1, Arr 0, Burst 4, Prio 0
     // P2: PID 2, Arr 1, Burst 2, Prio 0
-    // Then 10 (Exit)
-    std::istringstream in("1\n2\n1\n0\n4\n0\n2\n1\n2\n0\n10\n");
+    // Then 11 (Exit)
+    std::istringstream in("1\n2\n1\n0\n4\n0\n2\n1\n2\n0\n11\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -155,8 +155,8 @@ TEST(OScopeCLITest, RunsRoundRobinSimulationWithQuantum) {
     // Select 5 (Round Robin)
     // Quantum: 0 (rejected), -2 (rejected), 3 (accepted)
     // 1 process: PID 1, Arr 0, Burst 7, Prio 0
-    // Then 10 (Exit)
-    std::istringstream in("5\n0\n-2\n3\n1\n1\n0\n7\n0\n10\n");
+    // Then 11 (Exit)
+    std::istringstream in("5\n0\n-2\n3\n1\n1\n0\n7\n0\n11\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -175,8 +175,8 @@ TEST(OScopeCLITest, RunsMLFQSimulationWithQuanta) {
     // Q1: 4
     // Q2: 8
     // 1 process: PID 1, Arr 0, Burst 5, Prio 0
-    // Then 10 (Exit)
-    std::istringstream in("6\n0\n2\n4\n8\n1\n1\n0\n5\n0\n10\n");
+    // Then 11 (Exit)
+    std::istringstream in("6\n0\n2\n4\n8\n1\n1\n0\n5\n0\n11\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -192,8 +192,8 @@ TEST(OScopeCLITest, RunsPrioritySimulationSuccessfully) {
     // 2 processes:
     // P1: PID 1, Arr 0, Burst 4, Prio 2
     // P2: PID 2, Arr 0, Burst 2, Prio 1
-    // Then 10 (Exit)
-    std::istringstream in("4\n2\n1\n0\n4\n2\n2\n0\n2\n1\n10\n");
+    // Then 11 (Exit)
+    std::istringstream in("4\n2\n1\n0\n4\n2\n2\n0\n2\n1\n11\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -383,8 +383,8 @@ TEST(OScopeCLITest, InteractiveFcfsDisplaysFullResults) {
     // 2 processes:
     // P1: PID 1, Arr 0, Burst 3, Prio 0
     // P2: PID 2, Arr 1, Burst 2, Prio 0
-    // Then 10 (Exit)
-    std::istringstream in("1\n2\n1\n0\n3\n0\n2\n1\n2\n0\n10\n");
+    // Then 11 (Exit)
+    std::istringstream in("1\n2\n1\n0\n3\n0\n2\n1\n2\n0\n11\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -407,9 +407,9 @@ TEST(OScopeCLITest, InteractiveRoundRobinPreemptionDisplay) {
     // 2 processes:
     // P1: PID 1, Arr 0, Burst 3, Prio 0
     // P2: PID 2, Arr 0, Burst 2, Prio 0
-    // Then 10 (Exit)
+    // Then 11 (Exit)
     // P1 runs [0-2], P2 runs [2-4], P1 runs [4-5]
-    std::istringstream in("5\n2\n2\n1\n0\n3\n0\n2\n0\n2\n0\n10\n");
+    std::istringstream in("5\n2\n2\n1\n0\n3\n0\n2\n0\n2\n0\n11\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -428,8 +428,8 @@ TEST(OScopeCLITest, InteractiveFcfsWithIdleGapDisplay) {
     // 2 processes:
     // P1: PID 1, Arr 0, Burst 2, Prio 0
     // P2: PID 2, Arr 5, Burst 3, Prio 0
-    // Then 10 (Exit)
-    std::istringstream in("1\n2\n1\n0\n2\n0\n2\n5\n3\n0\n10\n");
+    // Then 11 (Exit)
+    std::istringstream in("1\n2\n1\n0\n2\n0\n2\n5\n3\n0\n11\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -539,8 +539,8 @@ TEST(OScopeCLITest, InteractiveComparisonRunsAllSixAlgorithms) {
     // 2 processes:
     // P1: PID 1, Arr 0, Burst 4, Prio 2
     // P2: PID 2, Arr 1, Burst 2, Prio 1
-    // Then 10 (Exit)
-    std::istringstream in("7\n2\n2\n4\n8\n2\n1\n0\n4\n2\n2\n1\n2\n1\n10\n");
+    // Then 11 (Exit)
+    std::istringstream in("7\n2\n2\n4\n8\n2\n1\n0\n4\n2\n2\n1\n2\n1\n11\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -567,8 +567,8 @@ TEST(OScopeCLITest, InteractiveComparisonRecoversFromInvalidQuanta) {
     // MLFQ Q1: 0 (rejected), 4 (accepted)
     // MLFQ Q2: bad (rejected), 8 (accepted)
     // 1 process: PID 1, Arr 0, Burst 3, Prio 1
-    // Then 10 (Exit)
-    std::istringstream in("7\n0\n-1\n2\n-3\n2\n0\n4\nbad\n8\n1\n1\n0\n3\n1\n10\n");
+    // Then 11 (Exit)
+    std::istringstream in("7\n0\n-1\n2\n-3\n2\n0\n4\nbad\n8\n1\n1\n0\n3\n1\n11\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);

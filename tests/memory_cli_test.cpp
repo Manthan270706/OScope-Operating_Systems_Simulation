@@ -13,8 +13,8 @@
 
 // 1. Navigation: Enter Memory Allocation menu and return cleanly to main menu
 TEST(OScopeMemoryCLITest, EntersMemoryMenuAndReturnsToMainMenu) {
-    // 9 (Memory Allocation), 5 (Return to main menu), 10 (Exit)
-    std::istringstream in("9\n5\n10\n");
+    // 9 (Memory Allocation), 5 (Return to main menu), 11 (Exit)
+    std::istringstream in("9\n5\n11\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -39,8 +39,8 @@ TEST(OScopeMemoryCLITest, IndividualStrategySuccessfulAllocationAndDeallocation)
     // Op 1: 1 (Allocate), Req ID 1, Size 200, PID 42
     // Op 2: 2 (Deallocate), Req ID 1
     // 5 (Return to main menu)
-    // 10 (Exit)
-    std::istringstream in("9\n1\n1000\n2\n1\n1\n200\n42\n2\n1\n5\n10\n");
+    // 11 (Exit)
+    std::istringstream in("9\n1\n1000\n2\n1\n1\n200\n42\n2\n1\n5\n11\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -62,7 +62,7 @@ TEST(OScopeMemoryCLITest, IndividualStrategySuccessfulAllocationAndDeallocation)
 // 3. Individual strategy: Best Fit and Worst Fit can be selected and executed
 TEST(OScopeMemoryCLITest, IndividualBestFitAndWorstFitExecuteCorrectly) {
     // Best Fit: 500 bytes, 1 op (Alloc Req 1, 120 B, PID none)
-    std::istringstream in_best("9\n2\n500\n1\n1\n1\n120\n-1\n5\n10\n");
+    std::istringstream in_best("9\n2\n500\n1\n1\n1\n120\n-1\n5\n11\n");
     std::ostringstream out_best;
     EXPECT_EQ(oscope::run_cli(in_best, out_best), 0);
     const std::string s_best = out_best.str();
@@ -71,7 +71,7 @@ TEST(OScopeMemoryCLITest, IndividualBestFitAndWorstFitExecuteCorrectly) {
     EXPECT_NE(s_best.find("Free Memory:            380 bytes"), std::string::npos);
 
     // Worst Fit: 600 bytes, 1 op (Alloc Req 1, 250 B, PID none)
-    std::istringstream in_worst("9\n3\n600\n1\n1\n1\n250\n-1\n5\n10\n");
+    std::istringstream in_worst("9\n3\n600\n1\n1\n1\n250\n-1\n5\n11\n");
     std::ostringstream out_worst;
     EXPECT_EQ(oscope::run_cli(in_worst, out_worst), 0);
     const std::string s_worst = out_worst.str();
@@ -102,7 +102,7 @@ TEST(OScopeMemoryCLITest, ComparisonModeProducesDistinguishableResults) {
         "2\n4\n"
         "1\n5\n150\n-1\n"
         "1\n6\n250\n-1\n"
-        "5\n10\n";
+        "5\n11\n";
 
     std::istringstream in(input);
     std::ostringstream out;
@@ -143,7 +143,7 @@ TEST(OScopeMemoryCLITest, RecoversFromInvalidNumericAndOperationTypeInputs) {
         "abc\n0\n-1\n1\n"
         "xyz\n0\n-20\n200\n"
         "invalid\n10\n"
-        "5\n10\n";
+        "5\n11\n";
 
     std::istringstream in(input);
     std::ostringstream out;
@@ -172,7 +172,7 @@ TEST(OScopeMemoryCLITest, RejectionOfDuplicateActiveLogicalIdsAndOom) {
         "1\n1\n200\n-1\n"
         "1\n1\n100\n-1\n"
         "1\n2\n400\n-1\n"
-        "5\n10\n";
+        "5\n11\n";
 
     std::istringstream in(input);
     std::ostringstream out;
@@ -203,7 +203,7 @@ TEST(OScopeMemoryCLITest, UnknownAndRepeatedDeallocationBehavior) {
         "2\n99\n"
         "2\n1\n"
         "2\n1\n"
-        "5\n10\n";
+        "5\n11\n";
 
     std::istringstream in(input);
     std::ostringstream out;
@@ -223,7 +223,7 @@ TEST(OScopeMemoryCLITest, UnknownAndRepeatedDeallocationBehavior) {
 // 8. Empty workload in individual and comparison modes
 TEST(OScopeMemoryCLITest, HandlesEmptyWorkloadCleanly) {
     // Individual mode with 0 operations
-    std::istringstream in_ind("9\n1\n400\n0\n5\n10\n");
+    std::istringstream in_ind("9\n1\n400\n0\n5\n11\n");
     std::ostringstream out_ind;
     EXPECT_EQ(oscope::run_cli(in_ind, out_ind), 0);
     const std::string s_ind = out_ind.str();
@@ -234,7 +234,7 @@ TEST(OScopeMemoryCLITest, HandlesEmptyWorkloadCleanly) {
     EXPECT_NE(s_ind.find("External Fragmentation: 0.00% (0.00)"), std::string::npos);
 
     // Comparison mode with 0 operations
-    std::istringstream in_comp("9\n4\n400\n0\n5\n10\n");
+    std::istringstream in_comp("9\n4\n400\n0\n5\n11\n");
     std::ostringstream out_comp;
     EXPECT_EQ(oscope::run_cli(in_comp, out_comp), 0);
     const std::string s_comp = out_comp.str();
@@ -304,9 +304,9 @@ TEST(OScopeMemoryCLITest, HandlesEofAtVariousMemoryInputPrompts) {
 
 // 10. Existing scheduling and paging CLI behaviors remain unaffected
 TEST(OScopeMemoryCLITest, ExistingSchedulingAndPagingBehaviorsUnaffected) {
-    // Run FCFS (Option 1) -> 1 process -> Exit with Option 10
+    // Run FCFS (Option 1) -> 1 process -> Exit with Option 11
     {
-        std::istringstream in("1\n1\n1\n0\n5\n0\n10\n");
+        std::istringstream in("1\n1\n1\n0\n5\n0\n11\n");
         std::ostringstream out;
         EXPECT_EQ(oscope::run_cli(in, out), 0);
         const std::string s = out.str();
@@ -314,9 +314,9 @@ TEST(OScopeMemoryCLITest, ExistingSchedulingAndPagingBehaviorsUnaffected) {
         EXPECT_NE(s.find("=== Execution Timeline ==="), std::string::npos);
     }
 
-    // Run Paging FIFO (Option 8 -> Option 1 -> frames 3 -> ref string "1 2 3" -> 5 -> 10)
+    // Run Paging FIFO (Option 8 -> Option 1 -> frames 3 -> ref string "1 2 3" -> 5 -> 11)
     {
-        std::istringstream in("8\n1\n3\n1 2 3\n5\n10\n");
+        std::istringstream in("8\n1\n3\n1 2 3\n5\n11\n");
         std::ostringstream out;
         EXPECT_EQ(oscope::run_cli(in, out), 0);
         const std::string s = out.str();

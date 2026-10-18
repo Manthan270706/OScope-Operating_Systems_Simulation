@@ -258,18 +258,19 @@ void print_main_menu(std::ostream& out) {
         << "7. Compare all scheduling algorithms\n"
         << "8. Page replacement (Paging)\n"
         << "9. Memory Allocation (Dynamic Partitioning)\n"
-        << "10. Exit\n"
+        << "10. Linux/POSIX Experiments\n"
+        << "11. Exit\n"
         << "========================================\n";
 }
 
 std::optional<AlgorithmChoice> read_menu_choice(std::istream& in, std::ostream& out) {
     int choice_val = 0;
     while (true) {
-        if (!read_int(in, out, "Enter your choice (1-10): ", choice_val)) {
+        if (!read_int(in, out, "Enter your choice (1-11): ", choice_val)) {
             return std::nullopt;
         }
-        if (choice_val < 1 || choice_val > 10) {
-            out << "Error: Choice must be between 1 and 10.\n";
+        if (choice_val < 1 || choice_val > 11) {
+            out << "Error: Choice must be between 1 and 11.\n";
             continue;
         }
         return static_cast<AlgorithmChoice>(choice_val);
@@ -622,6 +623,81 @@ bool run_memory_cli(std::istream& in, std::ostream& out) {
     }
 }
 
+void print_experiments_menu(std::ostream& out) {
+    out << "\n========================================\n"
+        << "       Linux/POSIX Experiments          \n"
+        << "========================================\n"
+        << "1. Process Creation\n"
+        << "2. Thread Creation\n"
+        << "3. Thread Synchronization\n"
+        << "4. Pipe-based IPC\n"
+        << "5. Return to Main Menu\n"
+        << "========================================\n";
+}
+
+std::optional<ExperimentChoice> read_experiment_choice(std::istream& in, std::ostream& out) {
+    int choice_val = 0;
+    while (true) {
+        if (!read_int(in, out, "Enter your choice (1-5): ", choice_val)) {
+            return std::nullopt;
+        }
+        if (choice_val < 1 || choice_val > 5) {
+            out << "Error: Choice must be between 1 and 5.\n";
+            continue;
+        }
+        return static_cast<ExperimentChoice>(choice_val);
+    }
+}
+
+bool run_experiments_cli(std::istream& in, std::ostream& out) {
+    while (true) {
+        print_experiments_menu(out);
+
+        auto choice_opt = read_experiment_choice(in, out);
+        if (!choice_opt.has_value()) {
+            return false;
+        }
+
+        ExperimentChoice choice = choice_opt.value();
+        if (choice == ExperimentChoice::ReturnToMainMenu) {
+            return true;
+        }
+
+        switch (choice) {
+            case ExperimentChoice::ProcessCreation: {
+                out << "\n[Linux/POSIX Process Creation Experiment]\n";
+                auto result = experiments::run_process_experiment();
+                display_process_experiment_result(out, result);
+                out << "\n";
+                break;
+            }
+            case ExperimentChoice::ThreadCreation: {
+                out << "\n[Linux/POSIX Thread Creation Experiment]\n";
+                auto result = experiments::run_thread_experiment();
+                display_thread_experiment_result(out, result);
+                out << "\n";
+                break;
+            }
+            case ExperimentChoice::ThreadSynchronization: {
+                out << "\n[Linux/POSIX Thread Synchronization Experiment]\n";
+                auto result = experiments::run_synchronization_experiment();
+                display_synchronization_experiment_result(out, result);
+                out << "\n";
+                break;
+            }
+            case ExperimentChoice::PipeIpc: {
+                out << "\n[Linux/POSIX Pipe-based IPC Experiment]\n";
+                auto result = experiments::run_pipe_ipc_experiment();
+                display_pipe_ipc_experiment_result(out, result);
+                out << "\n";
+                break;
+            }
+            case ExperimentChoice::ReturnToMainMenu:
+                return true;
+        }
+    }
+}
+
 int run_cli(std::istream& in, std::ostream& out) {
     while (true) {
         print_main_menu(out);
@@ -648,6 +724,14 @@ int run_cli(std::istream& in, std::ostream& out) {
 
         if (choice == AlgorithmChoice::MemoryAllocation) {
             if (!run_memory_cli(in, out)) {
+                out << "\nEnd of input reached. Exiting OScope.\n";
+                return 0;
+            }
+            continue;
+        }
+
+        if (choice == AlgorithmChoice::LinuxExperiments) {
+            if (!run_experiments_cli(in, out)) {
                 out << "\nEnd of input reached. Exiting OScope.\n";
                 return 0;
             }
@@ -1112,6 +1196,79 @@ void display_memory_comparison_table(std::ostream& out, const MemoryComparisonRe
 
     out.flags(orig_flags);
     out.precision(orig_prec);
+}
+
+void display_process_experiment_result(std::ostream& out, const experiments::ProcessExperimentResult& result) {
+    out << "=== Process Creation Experiment Result ===\n";
+    out << "Status:                 " << (result.is_success() ? "SUCCESS" : "FAILURE") << "\n";
+    out << "Parent PID:             " << result.parent_pid << "\n";
+    if (result.child_pid > 0) {
+        out << "Child PID:              " << result.child_pid << "\n";
+    } else {
+        out << "Child PID:              N/A\n";
+    }
+    if (result.exited_normally) {
+        out << "Child Termination:      Normal exit (code " << result.exit_code << ")\n";
+    } else if (result.termination_signal >= 0) {
+        out << "Child Termination:      Killed by signal " << result.termination_signal << "\n";
+    } else {
+        out << "Child Termination:      Not available / failed to reap\n";
+    }
+    out << "Details:                " << result.message << "\n";
+}
+
+void display_thread_experiment_result(std::ostream& out, const experiments::ThreadExperimentResult& result) {
+    out << "=== Thread Creation Experiment Result ===\n";
+    out << "Status:                 " << (result.success ? "SUCCESS" : "FAILURE") << "\n";
+    out << "Requested Threads:      " << result.requested_threads << "\n";
+    out << "Started Threads:        " << result.started_threads << "\n";
+    out << "Completed Threads:      " << result.completed_threads << "\n";
+    out << "Worker Outputs:         [";
+    for (std::size_t i = 0; i < result.worker_results.size(); ++i) {
+        if (i > 0) out << ", ";
+        out << "Thread " << (i + 1) << " => " << result.worker_results[i];
+    }
+    out << "]\n";
+    if (!result.error_message.empty()) {
+        out << "Error:                  " << result.error_message << "\n";
+    }
+}
+
+void display_synchronization_experiment_result(std::ostream& out, const experiments::SynchronizationExperimentResult& result) {
+    out << "=== Thread Synchronization Experiment Result ===\n";
+    out << "Status:                 " << (result.success ? "SUCCESS" : "FAILURE") << "\n";
+    out << "Concurrent Threads:     " << result.num_threads << "\n";
+    out << "Iterations Per Thread:  " << result.iterations_per_thread << "\n";
+    out << "Completed Threads:      " << result.threads_completed << "\n";
+    out << "Expected Counter:       " << result.expected_counter << "\n";
+    out << "Actual Counter:         " << result.actual_counter << "\n";
+    if (result.success) {
+        out << "Synchronization Check:  PASSED (Counter exact match, no data race detected)\n";
+    } else {
+        out << "Synchronization Check:  FAILED (" << result.error_message << ")\n";
+    }
+}
+
+void display_pipe_ipc_experiment_result(std::ostream& out, const experiments::PipeIpcExperimentResult& result) {
+    out << "=== Pipe-based IPC Experiment Result ===\n";
+    out << "Status:                 " << (result.is_success() ? "SUCCESS" : "FAILURE") << "\n";
+    out << "Direction:              Child -> Parent (POSIX pipe)\n";
+    out << "Parent PID:             " << result.parent_pid << "\n";
+    if (result.child_pid > 0) {
+        out << "Child PID:              " << result.child_pid << "\n";
+    } else {
+        out << "Child PID:              N/A\n";
+    }
+    if (result.child_exited_normally) {
+        out << "Child Exit Code:        " << result.child_exit_code << "\n";
+    } else if (result.child_termination_signal >= 0) {
+        out << "Child Termination:      Signal " << result.child_termination_signal << "\n";
+    }
+    out << "Sent Message:           \"" << result.sent_message << "\"\n";
+    out << "Received Message:       \"" << result.received_message << "\"\n";
+    if (!result.error_message.empty()) {
+        out << "Error:                  " << result.error_message << "\n";
+    }
 }
 
 } // namespace oscope

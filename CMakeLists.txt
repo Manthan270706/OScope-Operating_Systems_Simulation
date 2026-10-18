@@ -10,6 +10,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+find_package(Threads REQUIRED)
+
 add_library(oscope_core
     src/scheduling/fcfs.cpp
     src/scheduling/sjf.cpp
@@ -26,7 +28,16 @@ add_library(oscope_core
     src/process_manager.cpp
     src/memory/memory_manager.cpp
     src/memory/memory_comparison.cpp
+    src/experiments/process_experiment.cpp
+    src/experiments/thread_experiment.cpp
+    src/experiments/synchronization_experiment.cpp
+    src/experiments/pipe_ipc_experiment.cpp
     src/cli.cpp
+)
+
+target_link_libraries(oscope_core
+    PUBLIC
+    Threads::Threads
 )
 
 target_include_directories(oscope_core
@@ -87,6 +98,11 @@ add_executable(oscope_tests
     tests/memory_allocation_test.cpp
     tests/memory_comparison_test.cpp
     tests/memory_cli_test.cpp
+    tests/process_experiment_test.cpp
+    tests/thread_experiment_test.cpp
+    tests/synchronization_experiment_test.cpp
+    tests/pipe_ipc_experiment_test.cpp
+    tests/experiments_cli_test.cpp
 )
 
 target_link_libraries(oscope_tests
