@@ -383,8 +383,8 @@ TEST(ExperimentReportingTest, SerializesFailedPipeIpcExperiment) {
 // ============================================================================
 
 TEST(ExperimentReportingTest, RunsProcessCreationExperimentViaCLIWithJsonFormat) {
-    // 10 (Experiments), 1 (Process Creation), 5 (Return), 11 (Exit)
-    std::istringstream in("10\n1\n5\n11\n");
+    // 10 (Experiments), 1 (Process Creation), 5 (Return), 13 (Exit)
+    std::istringstream in("10\n1\n5\n13\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out, oscope::OutputFormat::Json);
@@ -407,8 +407,8 @@ TEST(ExperimentReportingTest, RunsProcessCreationExperimentViaCLIWithJsonFormat)
 }
 
 TEST(ExperimentReportingTest, RunsThreadCreationExperimentViaCLIWithJsonFormat) {
-    // 10 (Experiments), 2 (Thread Creation), 5 (Return), 11 (Exit)
-    std::istringstream in("10\n2\n5\n11\n");
+    // 10 (Experiments), 2 (Thread Creation), 5 (Return), 13 (Exit)
+    std::istringstream in("10\n2\n5\n13\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out, oscope::OutputFormat::Json);
@@ -429,8 +429,8 @@ TEST(ExperimentReportingTest, RunsThreadCreationExperimentViaCLIWithJsonFormat) 
 }
 
 TEST(ExperimentReportingTest, RunsSynchronizationExperimentViaCLIWithJsonFormat) {
-    // 10 (Experiments), 3 (Thread Synchronization), 5 (Return), 11 (Exit)
-    std::istringstream in("10\n3\n5\n11\n");
+    // 10 (Experiments), 3 (Thread Synchronization), 5 (Return), 13 (Exit)
+    std::istringstream in("10\n3\n5\n13\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out, oscope::OutputFormat::Json);
@@ -451,8 +451,8 @@ TEST(ExperimentReportingTest, RunsSynchronizationExperimentViaCLIWithJsonFormat)
 }
 
 TEST(ExperimentReportingTest, RunsPipeIpcExperimentViaCLIWithJsonFormat) {
-    // 10 (Experiments), 4 (Pipe-based IPC), 5 (Return), 11 (Exit)
-    std::istringstream in("10\n4\n5\n11\n");
+    // 10 (Experiments), 4 (Pipe-based IPC), 5 (Return), 13 (Exit)
+    std::istringstream in("10\n4\n5\n13\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out, oscope::OutputFormat::Json);
@@ -526,7 +526,7 @@ int run_shell_command(const std::string& cmd) {
 
 TEST(ExperimentReportingEndToEndTest, CompleteExecutableOutputsValidJsonArrayWithAllFourExperiments) {
     int exit_code = -1;
-    // 10 (Experiments), 1 (Process), 2 (Thread), 3 (Sync), 4 (IPC), 5 (Return), 11 (Exit)
+    // 10 (Experiments), 1 (Process), 2 (Thread), 3 (Sync), 4 (IPC), 5 (Return), 13 (Exit)
     std::string stdout_output = run_executable_e2e("10\\n1\\n2\\n3\\n4\\n5\\n11\\n", exit_code);
 
     EXPECT_EQ(exit_code, 0);
@@ -554,7 +554,7 @@ TEST(ExperimentReportingEndToEndTest, CompleteExecutableOutputsValidJsonArrayWit
 
 TEST(ExperimentReportingEndToEndTest, EmptySessionOutputsValidEmptyJsonArray) {
     int exit_code = -1;
-    // 11 (Exit immediately)
+    // 13 (Exit immediately)
     std::string stdout_output = run_executable_e2e("11\\n", exit_code);
 
     EXPECT_EQ(exit_code, 0);
@@ -572,7 +572,7 @@ TEST(ExperimentReportingEndToEndTest, EmptySessionOutputsValidEmptyJsonArray) {
 
 TEST(ExperimentReportingEndToEndTest, SingleExperimentWithSubmenuReturnOutputsValidJsonArray) {
     int exit_code = -1;
-    // 10 (Experiments), 1 (Process Creation), 5 (Return to main), 11 (Exit)
+    // 10 (Experiments), 1 (Process Creation), 5 (Return to main), 13 (Exit)
     std::string stdout_output = run_executable_e2e("10\\n1\\n5\\n11\\n", exit_code);
 
     EXPECT_EQ(exit_code, 0);

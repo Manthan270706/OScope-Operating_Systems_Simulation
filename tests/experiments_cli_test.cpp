@@ -8,8 +8,8 @@
 namespace {
 
 TEST(ExperimentsCLITest, EntersExperimentsMenuAndReturnsToMainMenu) {
-    // 10 (Linux/POSIX Experiments), 5 (Return to Main Menu), 11 (Exit)
-    std::istringstream in("10\n5\n11\n");
+    // 10 (Linux/POSIX Experiments), 5 (Return to Main Menu), 13 (Exit)
+    std::istringstream in("10\n5\n13\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -26,8 +26,8 @@ TEST(ExperimentsCLITest, EntersExperimentsMenuAndReturnsToMainMenu) {
 }
 
 TEST(ExperimentsCLITest, RunsProcessCreationExperimentViaCLI) {
-    // 10 (Experiments), 1 (Process Creation), 5 (Return), 11 (Exit)
-    std::istringstream in("10\n1\n5\n11\n");
+    // 10 (Experiments), 1 (Process Creation), 5 (Return), 13 (Exit)
+    std::istringstream in("10\n1\n5\n13\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -43,8 +43,8 @@ TEST(ExperimentsCLITest, RunsProcessCreationExperimentViaCLI) {
 }
 
 TEST(ExperimentsCLITest, RunsThreadCreationExperimentViaCLI) {
-    // 10 (Experiments), 2 (Thread Creation), 5 (Return), 11 (Exit)
-    std::istringstream in("10\n2\n5\n11\n");
+    // 10 (Experiments), 2 (Thread Creation), 5 (Return), 13 (Exit)
+    std::istringstream in("10\n2\n5\n13\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -60,8 +60,8 @@ TEST(ExperimentsCLITest, RunsThreadCreationExperimentViaCLI) {
 }
 
 TEST(ExperimentsCLITest, RunsThreadSynchronizationExperimentViaCLI) {
-    // 10 (Experiments), 3 (Thread Synchronization), 5 (Return), 11 (Exit)
-    std::istringstream in("10\n3\n5\n11\n");
+    // 10 (Experiments), 3 (Thread Synchronization), 5 (Return), 13 (Exit)
+    std::istringstream in("10\n3\n5\n13\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -77,8 +77,8 @@ TEST(ExperimentsCLITest, RunsThreadSynchronizationExperimentViaCLI) {
 }
 
 TEST(ExperimentsCLITest, RunsPipeIpcExperimentViaCLI) {
-    // 10 (Experiments), 4 (Pipe-based IPC), 5 (Return), 11 (Exit)
-    std::istringstream in("10\n4\n5\n11\n");
+    // 10 (Experiments), 4 (Pipe-based IPC), 5 (Return), 13 (Exit)
+    std::istringstream in("10\n4\n5\n13\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);
@@ -94,8 +94,8 @@ TEST(ExperimentsCLITest, RunsPipeIpcExperimentViaCLI) {
 }
 
 TEST(ExperimentsCLITest, RecoversFromInvalidSubmenuChoice) {
-    // Choice: "bad", 0, 6, then 5 (Return), then 11 (Exit)
-    std::istringstream in("10\nbad\n0\n6\n5\n11\n");
+    // Choice: "bad", 0, 6, then 5 (Return), then 13 (Exit)
+    std::istringstream in("10\nbad\n0\n6\n5\n13\n");
     std::ostringstream out;
 
     int exit_code = oscope::run_cli(in, out);

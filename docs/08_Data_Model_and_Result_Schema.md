@@ -274,3 +274,160 @@ Example Success:
    auto result = oscope::experiments::run_pipe_ipc_experiment();
    std::string json_output = oscope::reporting::serialize_result(result, true);
    ```
+
+---
+
+## 11. Deadlock Management JSON Schema (v1.0.0)
+
+OScope structures deadlock analysis and simulation results under `"category": "deadlock_management"`.
+
+### 11.1 Banker's Safety Result Schema (`"experiment": "bankers_safety"`)
+
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "deadlock_management",
+  "experiment": "bankers_safety",
+  "status": "success",
+  "success": true,
+  "result": {
+    "is_safe": true,
+    "num_processes": 5,
+    "num_resources": 3,
+    "safe_sequence": [1, 3, 0, 2, 4],
+    "blocked_processes": [],
+    "message": "System is in a safe state."
+  },
+  "error": null
+}
+```
+
+### 11.2 Resource Request Simulation Schema (`"experiment": "resource_request"`)
+
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "deadlock_management",
+  "experiment": "resource_request",
+  "status": "success",
+  "success": true,
+  "result": {
+    "process_id": 1,
+    "request": [1, 0, 2],
+    "granted": true,
+    "request_status": "Granted",
+    "is_safe": true,
+    "safe_sequence": [1, 3, 0, 2, 4],
+    "message": "Request granted. System transitions safely to new state."
+  },
+  "error": null
+}
+```
+
+### 11.3 Deadlock Detection Schema (`"experiment": "deadlock_detection"`)
+
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "deadlock_management",
+  "experiment": "deadlock_detection",
+  "status": "success",
+  "success": true,
+  "result": {
+    "is_deadlocked": false,
+    "num_processes": 5,
+    "num_resources": 3,
+    "deadlocked_processes": [],
+    "finish_order": [0, 1, 2, 3, 4],
+    "message": "No deadlock detected. All processes can successfully complete."
+  },
+  "error": null
+}
+```
+
+---
+
+## 12. Disk Scheduling JSON Schema (v1.0.0)
+
+OScope structures disk scheduling results under `"category": "disk_scheduling"`.
+
+### 12.1 Single Algorithm Result (`"experiment": "disk_scheduling"`)
+
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "disk_scheduling",
+  "experiment": "disk_scheduling",
+  "status": "success",
+  "success": true,
+  "result": {
+    "algorithm": "First-Come, First-Served (FCFS)",
+    "serviced_requests": [98, 183, 37, 122, 14, 124, 65, 67],
+    "head_path": [53, 98, 183, 37, 122, 14, 124, 65, 67],
+    "total_head_movement": 640,
+    "wraparound_movement": 0,
+    "average_head_movement": "80.000000",
+    "initial_head_position": 53,
+    "final_head_position": 67,
+    "message": "FCFS scheduling completed successfully."
+  },
+  "error": null
+}
+```
+
+### 12.2 Multi-Algorithm Comparison Result (`"experiment": "disk_comparison"`)
+
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "disk_scheduling",
+  "experiment": "disk_comparison",
+  "status": "success",
+  "success": true,
+  "result": {
+    "num_algorithms": 6,
+    "initial_head_position": 53,
+    "cylinder_range": [0, 199],
+    "algorithms": [
+      {
+        "algorithm": "FCFS",
+        "total_head_movement": 640,
+        "average_head_movement": 80.0,
+        "final_head_position": 67
+      },
+      {
+        "algorithm": "SSTF",
+        "total_head_movement": 236,
+        "average_head_movement": 29.5,
+        "final_head_position": 183
+      },
+      {
+        "algorithm": "SCAN",
+        "total_head_movement": 345,
+        "average_head_movement": 43.125,
+        "final_head_position": 0
+      },
+      {
+        "algorithm": "C-SCAN",
+        "total_head_movement": 382,
+        "average_head_movement": 47.75,
+        "final_head_position": 37
+      },
+      {
+        "algorithm": "LOOK",
+        "total_head_movement": 208,
+        "average_head_movement": 26.0,
+        "final_head_position": 14
+      },
+      {
+        "algorithm": "C-LOOK",
+        "total_head_movement": 322,
+        "average_head_movement": 40.25,
+        "final_head_position": 37
+      }
+    ],
+    "message": "Disk scheduling comparison completed across 6 algorithms."
+  },
+  "error": null
+}
+```

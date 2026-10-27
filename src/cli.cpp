@@ -260,18 +260,20 @@ void print_main_menu(std::ostream& out) {
         << "8. Page replacement (Paging)\n"
         << "9. Memory Allocation (Dynamic Partitioning)\n"
         << "10. Linux/POSIX Experiments\n"
-        << "11. Exit\n"
+        << "11. Deadlock Management\n"
+        << "12. Disk Scheduling\n"
+        << "13. Exit\n"
         << "========================================\n";
 }
 
 std::optional<AlgorithmChoice> read_menu_choice(std::istream& in, std::ostream& out) {
     int choice_val = 0;
     while (true) {
-        if (!read_int(in, out, "Enter your choice (1-11): ", choice_val)) {
+        if (!read_int(in, out, "Enter your choice (1-13): ", choice_val)) {
             return std::nullopt;
         }
-        if (choice_val < 1 || choice_val > 11) {
-            out << "Error: Choice must be between 1 and 11.\n";
+        if (choice_val < 1 || choice_val > 13) {
+            out << "Error: Choice must be between 1 and 13.\n";
             continue;
         }
         return static_cast<AlgorithmChoice>(choice_val);
@@ -790,6 +792,30 @@ int run_cli(std::istream& in, std::ostream& out, OutputFormat format) {
 
         if (choice == AlgorithmChoice::LinuxExperiments) {
             if (!run_experiments_cli(in, out, format, &json_results)) {
+                if (format == OutputFormat::HumanReadable) {
+                    out << "\nEnd of input reached. Exiting OScope.\n";
+                } else {
+                    finalize_json();
+                }
+                return 0;
+            }
+            continue;
+        }
+
+        if (choice == AlgorithmChoice::Deadlock) {
+            if (!run_deadlock_cli(in, out, format, &json_results)) {
+                if (format == OutputFormat::HumanReadable) {
+                    out << "\nEnd of input reached. Exiting OScope.\n";
+                } else {
+                    finalize_json();
+                }
+                return 0;
+            }
+            continue;
+        }
+
+        if (choice == AlgorithmChoice::DiskScheduling) {
+            if (!run_disk_cli(in, out, format, &json_results)) {
                 if (format == OutputFormat::HumanReadable) {
                     out << "\nEnd of input reached. Exiting OScope.\n";
                 } else {
@@ -1362,6 +1388,519 @@ void display_pipe_ipc_experiment_result(
     out << "Received Message:       \"" << result.received_message << "\"\n";
     if (!result.error_message.empty()) {
         out << "Error:                  " << result.error_message << "\n";
+    }
+}
+
+// ============================================================================
+// Deadlock Management CLI Implementation
+// ============================================================================
+
+void print_deadlock_menu(std::ostream& out) {
+    out << "\n========================================\n"
+        << "          Deadlock Management           \n"
+        << "========================================\n"
+        << "1. Banker's Safety Algorithm\n"
+        << "2. Simulate Resource Request\n"
+        << "3. Deadlock Detection\n"
+        << "4. Return to Main Menu\n"
+        << "========================================\n";
+}
+
+std::optional<DeadlockChoice> read_deadlock_choice(std::istream& in, std::ostream& out) {
+    int choice_val = 0;
+    while (true) {
+        if (!read_int(in, out, "Enter your choice (1-4): ", choice_val)) {
+            return std::nullopt;
+        }
+        if (choice_val < 1 || choice_val > 4) {
+            out << "Error: Choice must be between 1 and 4.\n";
+            continue;
+        }
+        return static_cast<DeadlockChoice>(choice_val);
+    }
+}
+
+namespace {
+
+bool read_resource_vector(std::istream& in, std::ostream& out, const std::string& label, int m, std::vector<int>& vec) {
+    vec.assign(m, 0);
+    out << label << " (" << m << " space-separated integers): ";
+    std::string line;
+    while (std::getline(in, line)) {
+        if (line.empty() || line.find_first_not_of(" \t\r\n") == std::string::npos) {
+            continue;
+        }
+        std::istringstream iss(line);
+        bool ok = true;
+        for (int j = 0; j < m; ++j) {
+            int val;
+            if (!(iss >> val) || val < 0) {
+                ok = false;
+                break;
+            }
+            vec[j] = val;
+        }
+        if (!ok) {
+            out << "Error: Enter exactly " << m << " non-negative integers: ";
+            continue;
+        }
+        return true;
+    }
+    return false;
+}
+
+bool read_resource_matrix(std::istream& in, std::ostream& out, const std::string& matrix_name, int n, int m, std::vector<std::vector<int>>& mat) {
+    mat.assign(n, std::vector<int>(m, 0));
+    out << "Enter " << matrix_name << " matrix (" << n << " rows of " << m << " integers):\n";
+    for (int i = 0; i < n; ++i) {
+        std::ostringstream prompt;
+        prompt << "  P" << i;
+        if (!read_resource_vector(in, out, prompt.str(), m, mat[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::optional<deadlock::DeadlockState> read_deadlock_state(std::istream& in, std::ostream& out) {
+    deadlock::DeadlockState state;
+    if (!read_positive_int(in, out, "Enter number of processes: ", state.num_processes)) {
+        return std::nullopt;
+    }
+    if (!read_positive_int(in, out, "Enter number of resource types: ", state.num_resources)) {
+        return std::nullopt;
+    }
+    if (!read_resource_vector(in, out, "Enter Available resources", state.num_resources, state.available)) {
+        return std::nullopt;
+    }
+    if (!read_resource_matrix(in, out, "Allocation", state.num_processes, state.num_resources, state.allocation)) {
+        return std::nullopt;
+    }
+    while (true) {
+        if (!read_resource_matrix(in, out, "Max claim", state.num_processes, state.num_resources, state.max)) {
+            return std::nullopt;
+        }
+        std::string err;
+        state.compute_need();
+        if (!state.validate(&err)) {
+            out << "Validation error: " << err << "\nPlease re-enter the Max matrix.\n";
+            continue;
+        }
+        break;
+    }
+    return state;
+}
+
+} // namespace
+
+void display_safety_result(std::ostream& out, const deadlock::SafetyResult& result, const deadlock::DeadlockState& state) {
+    out << "\n=== Banker's Safety Analysis ===\n";
+    out << "System State:           " << (result.is_safe ? "SAFE" : "UNSAFE") << "\n";
+    out << "Analysis:               " << result.message << "\n";
+    if (result.is_safe) {
+        out << "Safe Execution Sequence:";
+        for (size_t i = 0; i < result.safe_sequence.size(); ++i) {
+            out << " P" << result.safe_sequence[i];
+            if (i + 1 < result.safe_sequence.size()) out << " ->";
+        }
+        out << "\n";
+    } else {
+        out << "Blocked Processes:     ";
+        for (size_t i = 0; i < result.blocked_processes.size(); ++i) {
+            if (i > 0) out << ", ";
+            out << "P" << result.blocked_processes[i];
+        }
+        out << "\n";
+        out << "Note: An unsafe state means the system cannot guarantee that all processes can finish\n"
+            << "under maximum claims; it does not necessarily mean a deadlock exists at this instant.\n";
+    }
+
+    // Tabular display of state
+    out << "\nResource Matrices Summary:\n";
+    out << std::left << std::setw(8) << "Process"
+        << std::setw(16) << "Allocation"
+        << std::setw(16) << "Max Claim"
+        << std::setw(16) << "Need\n";
+    out << "--------------------------------------------------------\n";
+    for (int i = 0; i < state.num_processes; ++i) {
+        std::ostringstream alloc_ss, max_ss, need_ss;
+        for (int j = 0; j < state.num_resources; ++j) {
+            alloc_ss << state.allocation[i][j] << " ";
+            max_ss << state.max[i][j] << " ";
+            int need_val = (i < static_cast<int>(state.need.size()) && j < static_cast<int>(state.need[i].size()))
+                               ? state.need[i][j]
+                               : (state.max[i][j] - state.allocation[i][j]);
+            need_ss << need_val << " ";
+        }
+        out << "P" << std::left << std::setw(7) << i
+            << std::setw(16) << alloc_ss.str()
+            << std::setw(16) << max_ss.str()
+            << std::setw(16) << need_ss.str() << "\n";
+    }
+    out << "\nAvailable Resources:    ";
+    for (int j = 0; j < state.num_resources; ++j) {
+        out << state.available[j] << " ";
+    }
+    out << "\n";
+}
+
+void display_resource_request_result(std::ostream& out, const deadlock::ResourceRequestResult& result) {
+    out << "\n=== Resource Request Simulation ===\n";
+    out << "Requesting Process:     P" << result.process_id << "\n";
+    out << "Requested Resources:    [";
+    for (size_t i = 0; i < result.request.size(); ++i) {
+        if (i > 0) out << ", ";
+        out << result.request[i];
+    }
+    out << "]\n";
+    out << "Allocation Decision:    " << (result.granted ? "GRANTED" : "DENIED") << "\n";
+    out << "Reason:                 " << result.message << "\n";
+    if (result.granted) {
+        out << "Resulting Safe Sequence:";
+        for (size_t i = 0; i < result.safe_sequence.size(); ++i) {
+            out << " P" << result.safe_sequence[i];
+            if (i + 1 < result.safe_sequence.size()) out << " ->";
+        }
+        out << "\n";
+    } else {
+        out << "Original system state has been preserved uncorrupted.\n";
+    }
+}
+
+void display_deadlock_detection_result(std::ostream& out, const deadlock::DetectionResult& result) {
+    out << "\n=== Deadlock Detection Analysis ===\n";
+    out << "Detection Result:       " << (result.is_deadlocked ? "DEADLOCK DETECTED" : "NO DEADLOCK") << "\n";
+    out << "Diagnostic Message:     " << result.message << "\n";
+    if (result.is_deadlocked) {
+        out << "Deadlocked Processes:   ";
+        for (size_t i = 0; i < result.deadlocked_processes.size(); ++i) {
+            if (i > 0) out << ", ";
+            out << "P" << result.deadlocked_processes[i];
+        }
+        out << "\n";
+    } else {
+        out << "Execution Status:       All active processes can acquire pending resources and finish.\n";
+    }
+}
+
+bool run_deadlock_cli(
+    std::istream& in,
+    std::ostream& out,
+    OutputFormat format,
+    std::vector<reporting::JsonValue>* json_accumulator) {
+
+    std::ostream& prompt_stream = (format == OutputFormat::Json) ? std::cerr : out;
+    std::vector<reporting::JsonValue> local_accumulator;
+    std::vector<reporting::JsonValue>& target_accumulator =
+        json_accumulator ? *json_accumulator : local_accumulator;
+
+    while (true) {
+        print_deadlock_menu(prompt_stream);
+        auto choice_opt = read_deadlock_choice(in, prompt_stream);
+        if (!choice_opt.has_value()) {
+            if (format == OutputFormat::Json && !json_accumulator) {
+                out << reporting::JsonValue::array(std::move(target_accumulator)).serialize(true) << "\n";
+            }
+            return false;
+        }
+
+        DeadlockChoice choice = choice_opt.value();
+        if (choice == DeadlockChoice::ReturnToMainMenu) {
+            if (format == OutputFormat::Json && !json_accumulator) {
+                out << reporting::JsonValue::array(std::move(target_accumulator)).serialize(true) << "\n";
+            }
+            return true;
+        }
+
+        switch (choice) {
+            case DeadlockChoice::SafetyAnalysis: {
+                auto state_opt = read_deadlock_state(in, prompt_stream);
+                if (!state_opt.has_value()) {
+                    return false;
+                }
+                auto res = deadlock::check_safety(state_opt.value());
+                if (format == OutputFormat::Json) {
+                    target_accumulator.push_back(reporting::to_json(res, state_opt.value()));
+                } else {
+                    display_safety_result(out, res, state_opt.value());
+                }
+                break;
+            }
+            case DeadlockChoice::ResourceRequest: {
+                auto state_opt = read_deadlock_state(in, prompt_stream);
+                if (!state_opt.has_value()) {
+                    return false;
+                }
+                int proc_id = 0;
+                while (true) {
+                    if (!read_int(in, prompt_stream, "Enter requesting process ID (e.g. 0): ", proc_id)) {
+                        return false;
+                    }
+                    if (proc_id < 0 || proc_id >= state_opt.value().num_processes) {
+                        prompt_stream << "Error: Process ID must be between 0 and "
+                                      << (state_opt.value().num_processes - 1) << ".\n";
+                        continue;
+                    }
+                    break;
+                }
+                std::vector<int> req;
+                if (!read_resource_vector(in, prompt_stream, "Enter requested resources", state_opt.value().num_resources, req)) {
+                    return false;
+                }
+                auto res = deadlock::request_resources(state_opt.value(), proc_id, req);
+                if (format == OutputFormat::Json) {
+                    target_accumulator.push_back(reporting::to_json(res));
+                } else {
+                    display_resource_request_result(out, res);
+                }
+                break;
+            }
+            case DeadlockChoice::DeadlockDetection: {
+                int num_p = 0;
+                int num_r = 0;
+                if (!read_positive_int(in, prompt_stream, "Enter number of processes: ", num_p) ||
+                    !read_positive_int(in, prompt_stream, "Enter number of resource types: ", num_r)) {
+                    return false;
+                }
+                std::vector<int> avail;
+                if (!read_resource_vector(in, prompt_stream, "Enter Available resources", num_r, avail)) {
+                    return false;
+                }
+                std::vector<std::vector<int>> alloc, req_mat;
+                if (!read_resource_matrix(in, prompt_stream, "Allocation", num_p, num_r, alloc) ||
+                    !read_resource_matrix(in, prompt_stream, "Request", num_p, num_r, req_mat)) {
+                    return false;
+                }
+                auto res = deadlock::detect_deadlock(num_p, num_r, avail, alloc, req_mat);
+                if (format == OutputFormat::Json) {
+                    target_accumulator.push_back(reporting::to_json(res));
+                } else {
+                    display_deadlock_detection_result(out, res);
+                }
+                break;
+            }
+            case DeadlockChoice::ReturnToMainMenu:
+                return true;
+        }
+    }
+}
+
+// ============================================================================
+// Disk Scheduling CLI Implementation
+// ============================================================================
+
+void print_disk_menu(std::ostream& out) {
+    out << "\n========================================\n"
+        << "            Disk Scheduling             \n"
+        << "========================================\n"
+        << "1. First-Come, First-Served (FCFS)\n"
+        << "2. Shortest Seek Time First (SSTF)\n"
+        << "3. SCAN (Elevator)\n"
+        << "4. Circular SCAN (C-SCAN)\n"
+        << "5. LOOK\n"
+        << "6. Circular LOOK (C-LOOK)\n"
+        << "7. Compare all disk algorithms\n"
+        << "8. Return to Main Menu\n"
+        << "========================================\n";
+}
+
+std::optional<DiskChoice> read_disk_choice(std::istream& in, std::ostream& out) {
+    int choice_val = 0;
+    while (true) {
+        if (!read_int(in, out, "Enter your choice (1-8): ", choice_val)) {
+            return std::nullopt;
+        }
+        if (choice_val < 1 || choice_val > 8) {
+            out << "Error: Choice must be between 1 and 8.\n";
+            continue;
+        }
+        return static_cast<DiskChoice>(choice_val);
+    }
+}
+
+namespace {
+
+std::optional<disk::DiskConfig> read_disk_config(std::istream& in, std::ostream& out, bool needs_direction) {
+    disk::DiskConfig config;
+    if (!read_non_negative_int(in, out, "Enter minimum cylinder (default 0): ", config.min_cylinder)) {
+        return std::nullopt;
+    }
+    while (true) {
+        if (!read_positive_int(in, out, "Enter maximum cylinder (default 199): ", config.max_cylinder)) {
+            return std::nullopt;
+        }
+        if (config.max_cylinder <= config.min_cylinder) {
+            out << "Error: Maximum cylinder must be greater than minimum cylinder (" << config.min_cylinder << ").\n";
+            continue;
+        }
+        break;
+    }
+    while (true) {
+        if (!read_non_negative_int(in, out, "Enter initial head position: ", config.initial_head)) {
+            return std::nullopt;
+        }
+        if (config.initial_head < config.min_cylinder || config.initial_head > config.max_cylinder) {
+            out << "Error: Head position must be in range [" << config.min_cylinder << ", " << config.max_cylinder << "].\n";
+            continue;
+        }
+        break;
+    }
+    if (needs_direction) {
+        while (true) {
+            int dir_val = 1;
+            if (!read_int(in, out, "Enter initial direction (1 for Increasing/Up, 2 for Decreasing/Down): ", dir_val)) {
+                return std::nullopt;
+            }
+            if (dir_val == 1) {
+                config.direction = disk::Direction::Increasing;
+                break;
+            } else if (dir_val == 2) {
+                config.direction = disk::Direction::Decreasing;
+                break;
+            }
+            out << "Error: Direction must be 1 (Increasing) or 2 (Decreasing).\n";
+        }
+    }
+    return config;
+}
+
+std::optional<std::vector<int>> read_disk_requests(std::istream& in, std::ostream& out, const disk::DiskConfig& config) {
+    out << "Enter sequence of cylinder requests (e.g. 98 183 37 122 14 124 65 67): ";
+    std::string line;
+    while (std::getline(in, line)) {
+        if (line.empty() || line.find_first_not_of(" \t\r\n") == std::string::npos) {
+            return std::vector<int>();
+        }
+        std::istringstream iss(line);
+        std::vector<int> reqs;
+        int val;
+        bool ok = true;
+        while (iss >> val) {
+            if (val < config.min_cylinder || val > config.max_cylinder) {
+                out << "Error: Cylinder " << val << " is out of range ["
+                    << config.min_cylinder << ", " << config.max_cylinder << "]. Re-enter line: ";
+                ok = false;
+                break;
+            }
+            reqs.push_back(val);
+        }
+        if (!ok) continue;
+        return reqs;
+    }
+    return std::nullopt;
+}
+
+} // namespace
+
+void display_disk_result(std::ostream& out, const disk::DiskSchedulingResult& result) {
+    out << "\n=== Disk Scheduling Result: " << result.algorithm_name << " ===\n";
+    out << "Serviced Requests:      [";
+    for (size_t i = 0; i < result.serviced_requests.size(); ++i) {
+        if (i > 0) out << ", ";
+        out << result.serviced_requests[i];
+    }
+    out << "]\n";
+    out << "Head Movement Path:     ";
+    for (size_t i = 0; i < result.head_path.size(); ++i) {
+        if (i > 0) out << " -> ";
+        out << result.head_path[i];
+    }
+    out << "\n";
+    out << "Total Head Movement:    " << result.total_head_movement << " cylinders\n";
+    if (result.wraparound_movement > 0) {
+        out << "  (Includes circular wraparound traversal: " << result.wraparound_movement << " cylinders)\n";
+    }
+    out << std::fixed << std::setprecision(2);
+    out << "Average Head Movement:  " << result.average_head_movement << " cylinders/request\n";
+    out << "Initial Head Position:  " << result.initial_head_position << "\n";
+    out << "Final Head Position:    " << result.final_head_position << "\n";
+    out << std::defaultfloat;
+}
+
+void display_disk_comparison_table(std::ostream& out, const disk::DiskComparisonResult& result) {
+    out << "\n========================================================================================\n"
+        << "                            Disk Scheduling Comparison                                  \n"
+        << "========================================================================================\n";
+    out << std::left << std::setw(32) << "Algorithm"
+        << std::right << std::setw(22) << "Total Movement (cyl)"
+        << std::right << std::setw(20) << "Avg Movement/Req"
+        << std::right << std::setw(14) << "Final Head\n";
+    out << "----------------------------------------------------------------------------------------\n";
+    for (const auto& item : result.results) {
+        out << std::left << std::setw(32) << item.algorithm_name
+            << std::right << std::setw(22) << item.total_head_movement
+            << std::right << std::fixed << std::setprecision(2) << std::setw(20) << item.average_head_movement
+            << std::right << std::setw(14) << item.final_head_position << "\n";
+    }
+    out << "========================================================================================\n"
+        << "Note: C-SCAN and C-LOOK include wraparound circular return seek distance in total movement.\n"
+        << std::defaultfloat;
+}
+
+bool run_disk_cli(
+    std::istream& in,
+    std::ostream& out,
+    OutputFormat format,
+    std::vector<reporting::JsonValue>* json_accumulator) {
+
+    std::ostream& prompt_stream = (format == OutputFormat::Json) ? std::cerr : out;
+    std::vector<reporting::JsonValue> local_accumulator;
+    std::vector<reporting::JsonValue>& target_accumulator =
+        json_accumulator ? *json_accumulator : local_accumulator;
+
+    while (true) {
+        print_disk_menu(prompt_stream);
+        auto choice_opt = read_disk_choice(in, prompt_stream);
+        if (!choice_opt.has_value()) {
+            if (format == OutputFormat::Json && !json_accumulator) {
+                out << reporting::JsonValue::array(std::move(target_accumulator)).serialize(true) << "\n";
+            }
+            return false;
+        }
+
+        DiskChoice choice = choice_opt.value();
+        if (choice == DiskChoice::ReturnToMainMenu) {
+            if (format == OutputFormat::Json && !json_accumulator) {
+                out << reporting::JsonValue::array(std::move(target_accumulator)).serialize(true) << "\n";
+            }
+            return true;
+        }
+
+        bool needs_dir = (choice != DiskChoice::FCFS && choice != DiskChoice::SSTF);
+        auto config_opt = read_disk_config(in, prompt_stream, needs_dir);
+        if (!config_opt.has_value()) {
+            return false;
+        }
+        auto reqs_opt = read_disk_requests(in, prompt_stream, config_opt.value());
+        if (!reqs_opt.has_value()) {
+            return false;
+        }
+
+        if (choice == DiskChoice::CompareAll) {
+            auto comp_result = disk::compare_all_disk(reqs_opt.value(), config_opt.value());
+            if (format == OutputFormat::Json) {
+                target_accumulator.push_back(reporting::to_json(comp_result));
+            } else {
+                display_disk_comparison_table(out, comp_result);
+            }
+        } else {
+            disk::DiskAlgorithm algo;
+            switch (choice) {
+                case DiskChoice::FCFS: algo = disk::DiskAlgorithm::FCFS; break;
+                case DiskChoice::SSTF: algo = disk::DiskAlgorithm::SSTF; break;
+                case DiskChoice::SCAN: algo = disk::DiskAlgorithm::SCAN; break;
+                case DiskChoice::CSCAN: algo = disk::DiskAlgorithm::CSCAN; break;
+                case DiskChoice::LOOK: algo = disk::DiskAlgorithm::LOOK; break;
+                case DiskChoice::CLOOK: algo = disk::DiskAlgorithm::CLOOK; break;
+                default: algo = disk::DiskAlgorithm::FCFS; break;
+            }
+            auto res = disk::schedule_disk(algo, reqs_opt.value(), config_opt.value());
+            if (format == OutputFormat::Json) {
+                target_accumulator.push_back(reporting::to_json(res));
+            } else {
+                display_disk_result(out, res);
+            }
+        }
     }
 }
 

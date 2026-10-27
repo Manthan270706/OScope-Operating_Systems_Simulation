@@ -6,6 +6,11 @@
 #include <string>
 #include <vector>
 
+#include "oscope/deadlock/bankers_algorithm.hpp"
+#include "oscope/deadlock/deadlock_detector.hpp"
+#include "oscope/deadlock/deadlock_types.hpp"
+#include "oscope/disk/disk_scheduler.hpp"
+#include "oscope/disk/disk_types.hpp"
 #include "oscope/experiments/pipe_ipc_experiment.hpp"
 #include "oscope/experiments/process_experiment.hpp"
 #include "oscope/experiments/synchronization_experiment.hpp"
@@ -33,7 +38,9 @@ enum class AlgorithmChoice {
     Paging = 8,
     MemoryAllocation = 9,
     LinuxExperiments = 10,
-    Exit = 11
+    Deadlock = 11,
+    DiskScheduling = 12,
+    Exit = 13
 };
 
 enum class PagingChoice {
@@ -58,6 +65,24 @@ enum class ExperimentChoice {
     ThreadSynchronization = 3,
     PipeIpc = 4,
     ReturnToMainMenu = 5
+};
+
+enum class DeadlockChoice {
+    SafetyAnalysis = 1,
+    ResourceRequest = 2,
+    DeadlockDetection = 3,
+    ReturnToMainMenu = 4
+};
+
+enum class DiskChoice {
+    FCFS = 1,
+    SSTF = 2,
+    SCAN = 3,
+    CSCAN = 4,
+    LOOK = 5,
+    CLOOK = 6,
+    CompareAll = 7,
+    ReturnToMainMenu = 8
 };
 
 enum class OutputFormat {
@@ -112,10 +137,31 @@ void display_thread_experiment_result(std::ostream& out, const experiments::Thre
 void display_synchronization_experiment_result(std::ostream& out, const experiments::SynchronizationExperimentResult& result, OutputFormat format = OutputFormat::HumanReadable);
 void display_pipe_ipc_experiment_result(std::ostream& out, const experiments::PipeIpcExperimentResult& result, OutputFormat format = OutputFormat::HumanReadable);
 
+void print_deadlock_menu(std::ostream& out);
+std::optional<DeadlockChoice> read_deadlock_choice(std::istream& in, std::ostream& out);
+void display_safety_result(std::ostream& out, const deadlock::SafetyResult& result, const deadlock::DeadlockState& state);
+void display_resource_request_result(std::ostream& out, const deadlock::ResourceRequestResult& result);
+void display_deadlock_detection_result(std::ostream& out, const deadlock::DetectionResult& result);
+
+void print_disk_menu(std::ostream& out);
+std::optional<DiskChoice> read_disk_choice(std::istream& in, std::ostream& out);
+void display_disk_result(std::ostream& out, const disk::DiskSchedulingResult& result);
+void display_disk_comparison_table(std::ostream& out, const disk::DiskComparisonResult& result);
+
 // Interactive CLI entry points
 bool run_paging_cli(std::istream& in, std::ostream& out);
 bool run_memory_cli(std::istream& in, std::ostream& out);
 bool run_experiments_cli(
+    std::istream& in,
+    std::ostream& out,
+    OutputFormat format = OutputFormat::HumanReadable,
+    std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+bool run_deadlock_cli(
+    std::istream& in,
+    std::ostream& out,
+    OutputFormat format = OutputFormat::HumanReadable,
+    std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+bool run_disk_cli(
     std::istream& in,
     std::ostream& out,
     OutputFormat format = OutputFormat::HumanReadable,

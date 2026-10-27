@@ -32,6 +32,9 @@ add_library(oscope_core
     src/experiments/thread_experiment.cpp
     src/experiments/synchronization_experiment.cpp
     src/experiments/pipe_ipc_experiment.cpp
+    src/deadlock/bankers_algorithm.cpp
+    src/deadlock/deadlock_detector.cpp
+    src/disk/disk_scheduler.cpp
     src/reporting/json_value.cpp
     src/reporting/experiment_reporter.cpp
     src/cli.cpp
@@ -106,6 +109,10 @@ add_executable(oscope_tests
     tests/pipe_ipc_experiment_test.cpp
     tests/experiments_cli_test.cpp
     tests/experiment_reporting_test.cpp
+    tests/deadlock_test.cpp
+    tests/disk_test.cpp
+    tests/deadlock_cli_test.cpp
+    tests/disk_cli_test.cpp
 )
 
 target_link_libraries(oscope_tests
