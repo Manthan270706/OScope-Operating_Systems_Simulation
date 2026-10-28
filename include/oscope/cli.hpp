@@ -81,8 +81,9 @@ enum class DiskChoice {
     CSCAN = 4,
     LOOK = 5,
     CLOOK = 6,
-    CompareAll = 7,
-    ReturnToMainMenu = 8
+    LIFO = 7,
+    CompareAll = 8,
+    ReturnToMainMenu = 9
 };
 
 enum class OutputFormat {
@@ -167,6 +168,18 @@ bool run_disk_cli(
     OutputFormat format = OutputFormat::HumanReadable,
     std::vector<reporting::JsonValue>* json_accumulator = nullptr);
 int run_cli(std::istream& in, std::ostream& out, OutputFormat format = OutputFormat::HumanReadable);
+
+// Educational Demonstration Runners
+void run_demo_address_translation(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_demo_petersons_algorithm(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_demo_sync(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_demo_coffman_conditions(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_demo_host_monitoring(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_demo_filesystem(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_demo_ipc_extensions(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_demo_process_lifecycle(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_demo_disk(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_all_demos(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable);
 
 } // namespace oscope
 

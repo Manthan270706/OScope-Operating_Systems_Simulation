@@ -14,6 +14,7 @@ std::string to_string(DiskAlgorithm algo) {
         case DiskAlgorithm::CSCAN: return "Circular SCAN (C-SCAN)";
         case DiskAlgorithm::LOOK: return "LOOK";
         case DiskAlgorithm::CLOOK: return "Circular LOOK (C-LOOK)";
+        case DiskAlgorithm::LIFO: return "Last-In, First-Out (LIFO)";
     }
     return "Unknown";
 }
@@ -467,6 +468,32 @@ DiskSchedulingResult schedule_clook(const std::vector<int>& requests, const Disk
     return res;
 }
 
+DiskSchedulingResult schedule_lifo(const std::vector<int>& requests, const DiskConfig& config) {
+    std::string err;
+    if (!validate_disk_requests(requests, config, &err)) {
+        return handle_empty_or_invalid(DiskAlgorithm::LIFO, requests, config, true, err);
+    }
+    if (requests.empty()) {
+        return handle_empty_or_invalid(DiskAlgorithm::LIFO, requests, config, false, "");
+    }
+
+    DiskSchedulingResult res;
+    res.algorithm = DiskAlgorithm::LIFO;
+    res.algorithm_name = to_string(DiskAlgorithm::LIFO);
+    res.serviced_requests.assign(requests.rbegin(), requests.rend());
+    res.head_path.reserve(requests.size() + 1);
+    res.head_path.push_back(config.initial_head);
+
+    for (int req : res.serviced_requests) {
+        res.head_path.push_back(req);
+    }
+
+    populate_metrics(res, requests.size());
+    res.success = true;
+    res.message = "LIFO scheduling completed successfully.";
+    return res;
+}
+
 DiskSchedulingResult schedule_disk(DiskAlgorithm algo,
                                    const std::vector<int>& requests,
                                    const DiskConfig& config) {
@@ -477,6 +504,7 @@ DiskSchedulingResult schedule_disk(DiskAlgorithm algo,
         case DiskAlgorithm::CSCAN: return schedule_cscan(requests, config);
         case DiskAlgorithm::LOOK: return schedule_look(requests, config);
         case DiskAlgorithm::CLOOK: return schedule_clook(requests, config);
+        case DiskAlgorithm::LIFO: return schedule_lifo(requests, config);
     }
     return handle_empty_or_invalid(algo, requests, config, true, "Unknown disk scheduling algorithm.");
 }
@@ -493,6 +521,7 @@ DiskComparisonResult compare_all_disk(const std::vector<int>& requests,
     comparison.results.push_back(schedule_cscan(requests, config));
     comparison.results.push_back(schedule_look(requests, config));
     comparison.results.push_back(schedule_clook(requests, config));
+    comparison.results.push_back(schedule_lifo(requests, config));
 
     return comparison;
 }

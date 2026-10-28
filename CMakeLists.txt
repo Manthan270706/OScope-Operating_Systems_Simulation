@@ -37,12 +37,23 @@ add_library(oscope_core
     src/disk/disk_scheduler.cpp
     src/reporting/json_value.cpp
     src/reporting/experiment_reporter.cpp
+    src/paging/address_translation.cpp
+    src/synchronization/petersons_algorithm.cpp
+    src/deadlock/coffman_conditions.cpp
+    src/monitoring/host_monitor.cpp
+    src/filesystem/simple_fs.cpp
+    src/experiments/ipc_experiments.cpp
+    src/experiments/process_lifecycle_experiment.cpp
+    src/synchronization/semaphore_experiment.cpp
     src/cli.cpp
 )
+
+find_library(LIBRT rt)
 
 target_link_libraries(oscope_core
     PUBLIC
     Threads::Threads
+    $<$<BOOL:${LIBRT}>:${LIBRT}>
 )
 
 target_include_directories(oscope_core
@@ -113,6 +124,14 @@ add_executable(oscope_tests
     tests/disk_test.cpp
     tests/deadlock_cli_test.cpp
     tests/disk_cli_test.cpp
+    tests/address_translation_test.cpp
+    tests/petersons_algorithm_test.cpp
+    tests/coffman_test.cpp
+    tests/host_monitor_test.cpp
+    tests/simple_fs_test.cpp
+    tests/ipc_extensions_test.cpp
+    tests/process_lifecycle_experiment_test.cpp
+    tests/semaphore_experiment_test.cpp
 )
 
 target_link_libraries(oscope_tests

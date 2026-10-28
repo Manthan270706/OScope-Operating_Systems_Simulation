@@ -24,7 +24,8 @@ enum class DiskAlgorithm {
     SCAN = 3,
     CSCAN = 4,
     LOOK = 5,
-    CLOOK = 6
+    CLOOK = 6,
+    LIFO = 7
 };
 
 /**

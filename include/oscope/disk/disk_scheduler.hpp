@@ -25,6 +25,7 @@ DiskSchedulingResult schedule_scan(const std::vector<int>& requests, const DiskC
 DiskSchedulingResult schedule_cscan(const std::vector<int>& requests, const DiskConfig& config);
 DiskSchedulingResult schedule_look(const std::vector<int>& requests, const DiskConfig& config);
 DiskSchedulingResult schedule_clook(const std::vector<int>& requests, const DiskConfig& config);
+DiskSchedulingResult schedule_lifo(const std::vector<int>& requests, const DiskConfig& config);
 
 /**
  * @brief Dispatches the specified disk scheduling algorithm.

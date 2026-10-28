@@ -4,13 +4,21 @@
 #include <string>
 #include <string_view>
 
+#include "oscope/deadlock/coffman_conditions.hpp"
 #include "oscope/deadlock/deadlock_types.hpp"
 #include "oscope/disk/disk_types.hpp"
+#include "oscope/experiments/ipc_experiments.hpp"
 #include "oscope/experiments/pipe_ipc_experiment.hpp"
 #include "oscope/experiments/process_experiment.hpp"
+#include "oscope/experiments/process_lifecycle_experiment.hpp"
 #include "oscope/experiments/synchronization_experiment.hpp"
 #include "oscope/experiments/thread_experiment.hpp"
+#include "oscope/filesystem/simple_fs.hpp"
+#include "oscope/monitoring/host_monitor.hpp"
+#include "oscope/paging/address_translation.hpp"
 #include "oscope/reporting/json_value.hpp"
+#include "oscope/synchronization/petersons_algorithm.hpp"
+#include "oscope/synchronization/semaphore_experiment.hpp"
 
 namespace oscope::reporting {
 
@@ -70,6 +78,21 @@ JsonValue to_json(const disk::DiskSchedulingResult& result);
  * @brief Converts a DiskComparisonResult into a structured JsonValue object.
  */
 JsonValue to_json(const disk::DiskComparisonResult& result);
+
+JsonValue to_json(const paging::TranslationResult& result);
+JsonValue to_json(const paging::DemandPagingResult& result);
+JsonValue to_json(const synchronization::PetersonSimulationResult& result);
+JsonValue to_json(const deadlock::CoffmanConditionReport& result);
+JsonValue to_json(const monitoring::HostMonitoringSnapshot& result);
+JsonValue to_json(const filesystem::FilesystemStatus& result);
+JsonValue to_json(const experiments::FifoExperimentResult& result);
+JsonValue to_json(const experiments::SharedMemoryExperimentResult& result);
+JsonValue to_json(const experiments::MessageQueueExperimentResult& result);
+JsonValue to_json(const experiments::ProcessExecResult& result);
+JsonValue to_json(const experiments::ZombieDemonstrationResult& result);
+JsonValue to_json(const experiments::OrphanDemonstrationResult& result);
+JsonValue to_json(const synchronization::SemaphoreExperimentResult& result);
+JsonValue to_json(const synchronization::ProducerConsumerResult& result);
 
 /**
  * @brief Serializes a ProcessExperimentResult directly to a JSON string.

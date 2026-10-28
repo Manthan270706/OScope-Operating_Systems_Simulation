@@ -177,7 +177,7 @@ TEST(DiskSchedulingTest, HandlesEmptyRequestWorkloadSafely) {
     std::vector<int> empty_requests;
 
     for (DiskAlgorithm algo : {DiskAlgorithm::FCFS, DiskAlgorithm::SSTF, DiskAlgorithm::SCAN,
-                               DiskAlgorithm::CSCAN, DiskAlgorithm::LOOK, DiskAlgorithm::CLOOK}) {
+                               DiskAlgorithm::CSCAN, DiskAlgorithm::LOOK, DiskAlgorithm::CLOOK, DiskAlgorithm::LIFO}) {
         DiskSchedulingResult res = schedule_disk(algo, empty_requests, config);
         EXPECT_TRUE(res.success);
         EXPECT_TRUE(res.serviced_requests.empty());
@@ -228,7 +228,7 @@ TEST(DiskSchedulingTest, HandlesDuplicateRequestsAndRequestsAtHeadConsistently) 
     std::vector<int> dups = {53, 65, 53, 98, 65};
 
     for (DiskAlgorithm algo : {DiskAlgorithm::FCFS, DiskAlgorithm::SSTF, DiskAlgorithm::SCAN,
-                               DiskAlgorithm::CSCAN, DiskAlgorithm::LOOK, DiskAlgorithm::CLOOK}) {
+                               DiskAlgorithm::CSCAN, DiskAlgorithm::LOOK, DiskAlgorithm::CLOOK, DiskAlgorithm::LIFO}) {
         DiskSchedulingResult res = schedule_disk(algo, dups, config);
         EXPECT_TRUE(res.success);
         EXPECT_EQ(res.serviced_requests.size(), 5u);
@@ -299,7 +299,7 @@ TEST(DiskSchedulingTest, ComparesAllAlgorithmsWithoutMutatingInput) {
 
     // Verify input vector was not mutated
     EXPECT_EQ(input_copy, kTextbookRequests);
-    EXPECT_EQ(comparison.results.size(), 6u);
+    EXPECT_EQ(comparison.results.size(), 7u);
 
     // Check algorithm names and metrics in comparison
     EXPECT_EQ(comparison.results[0].algorithm, DiskAlgorithm::FCFS);
@@ -319,6 +319,31 @@ TEST(DiskSchedulingTest, ComparesAllAlgorithmsWithoutMutatingInput) {
 
     EXPECT_EQ(comparison.results[5].algorithm, DiskAlgorithm::CLOOK);
     EXPECT_EQ(comparison.results[5].total_head_movement, 322);
+
+    EXPECT_EQ(comparison.results[6].algorithm, DiskAlgorithm::LIFO);
+    EXPECT_EQ(comparison.results[6].total_head_movement, 609);
+}
+
+// ============================================================================
+// 7. LIFO Disk Scheduling Tests
+// ============================================================================
+
+TEST(DiskSchedulingTest, LIFOServicesInReverseArrivalOrderWithExactMovement) {
+    DiskConfig config = create_standard_config();
+    DiskSchedulingResult res = schedule_lifo(kTextbookRequests, config);
+
+    EXPECT_TRUE(res.success);
+    // Reverse arrival order: 67, 65, 124, 14, 122, 37, 183, 98
+    std::vector<int> expected_order = {67, 65, 124, 14, 122, 37, 183, 98};
+    EXPECT_EQ(res.serviced_requests, expected_order);
+
+    // Path: 53 -> 67 -> 65 -> 124 -> 14 -> 122 -> 37 -> 183 -> 98
+    // Total movement: |67-53| + |65-67| + |124-65| + |14-124| + |122-14| + |37-122| + |183-37| + |98-183|
+    //               = 14 + 2 + 59 + 110 + 108 + 85 + 146 + 85 = 609 cylinders
+    EXPECT_EQ(res.total_head_movement, 609);
+    EXPECT_DOUBLE_EQ(res.average_head_movement, 609.0 / 8.0);
+    EXPECT_EQ(res.initial_head_position, 53);
+    EXPECT_EQ(res.final_head_position, 98);
 }
 
 // ============================================================================

@@ -43,4 +43,33 @@ TEST(ProcessExperimentTest, ResultReportsConsistentExitDetails) {
     EXPECT_NE(result.message.find("42"), std::string::npos);
 }
 
+TEST(ProcessExperimentTest, ProcessExecReplacesImageAndCapturesOutput) {
+    auto result = run_process_exec_experiment();
+
+    EXPECT_TRUE(result.success) << "Exec experiment error: " << result.error_message;
+    EXPECT_TRUE(result.image_replaced);
+    EXPECT_GT(result.child_pid, 0);
+    EXPECT_EQ(result.child_exit_code, 0);
+    EXPECT_NE(result.captured_output.find("OScope Exec Process Replacement Verified"), std::string::npos);
+    EXPECT_TRUE(result.error_message.empty());
+}
+
+TEST(ProcessExperimentTest, ProcessExecHandlesCustomExecutableAndArguments) {
+    auto result = run_process_exec_experiment("/bin/echo", "TestingCustomEchoExec456");
+
+    EXPECT_TRUE(result.success);
+    EXPECT_TRUE(result.image_replaced);
+    EXPECT_EQ(result.child_exit_code, 0);
+    EXPECT_NE(result.captured_output.find("TestingCustomEchoExec456"), std::string::npos);
+}
+
+TEST(ProcessExperimentTest, ProcessExecHandlesNonExistentExecutableGracefully) {
+    auto result = run_process_exec_experiment("/nonexistent_binary_xyz_oscope_999", "bad");
+
+    EXPECT_FALSE(result.success);
+    EXPECT_FALSE(result.image_replaced);
+    EXPECT_EQ(result.child_exit_code, 127);
+    EXPECT_FALSE(result.error_message.empty());
+}
+
 } // namespace

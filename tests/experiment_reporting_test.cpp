@@ -591,6 +591,180 @@ TEST(ExperimentReportingEndToEndTest, SingleExperimentWithSubmenuReturnOutputsVa
     EXPECT_EQ(run_shell_command(py_cmd), 0);
 }
 
+TEST(ExperimentReportingTest, SerializesPagingTranslationAndDemandPaging) {
+    oscope::paging::TranslationResult tr;
+    tr.virtual_address = 4100;
+    tr.page_number = 1;
+    tr.offset = 4;
+    tr.page_fault = false;
+    tr.frame_number = 2;
+    tr.physical_address = 8196;
+    tr.message = "Translated";
+
+    auto json_tr = to_json(tr);
+    EXPECT_EQ(json_tr.find("schema_version")->as_string(), "1.0.0");
+    EXPECT_EQ(json_tr.find("experiment")->as_string(), "address_translation");
+    EXPECT_TRUE(json_tr.find("success")->as_bool());
+    EXPECT_EQ(json_tr.find("result")->find("physical_address")->as_uint64(), 8196u);
+
+    oscope::paging::DemandPagingResult dp;
+    dp.page_size = 4096;
+    dp.total_frames = 3;
+    dp.total_accesses = 10;
+    dp.page_faults = 4;
+    dp.page_hits = 6;
+    dp.fault_rate = 0.4;
+
+    auto json_dp = to_json(dp);
+    EXPECT_EQ(json_dp.find("experiment")->as_string(), "demand_paging");
+    EXPECT_EQ(json_dp.find("result")->find("page_faults")->as_int64(), 4);
+}
+
+TEST(ExperimentReportingTest, SerializesPetersonsAlgorithmResult) {
+    oscope::synchronization::PetersonSimulationResult pr;
+    pr.mutual_exclusion_maintained = true;
+    pr.p0_critical_entries = 5;
+    pr.p1_critical_entries = 5;
+    pr.total_steps = 20;
+    pr.explanation = "Peterson notes";
+
+    auto json_pr = to_json(pr);
+    EXPECT_EQ(json_pr.find("category")->as_string(), "synchronization");
+    EXPECT_EQ(json_pr.find("experiment")->as_string(), "petersons_algorithm");
+    EXPECT_TRUE(json_pr.find("success")->as_bool());
+    EXPECT_EQ(json_pr.find("result")->find("total_steps")->as_int64(), 20);
+}
+
+TEST(ExperimentReportingTest, SerializesCoffmanConditionsReport) {
+    auto cr = oscope::deadlock::CoffmanEvaluator::evaluate(true, true, true, true);
+    auto json_cr = to_json(cr);
+
+    EXPECT_EQ(json_cr.find("category")->as_string(), "deadlock_management");
+    EXPECT_EQ(json_cr.find("experiment")->as_string(), "coffman_conditions");
+    EXPECT_TRUE(json_cr.find("result")->find("deadlock_possible")->as_bool());
+}
+
+TEST(ExperimentReportingTest, SerializesHostMonitoringSnapshot) {
+    auto snap = oscope::monitoring::HostMonitor::take_snapshot();
+    auto json_snap = to_json(snap);
+
+    EXPECT_EQ(json_snap.find("category")->as_string(), "linux_monitoring");
+    EXPECT_EQ(json_snap.find("experiment")->as_string(), "host_observation");
+    EXPECT_EQ(json_snap.find("result")->find("source")->as_string(), "real_linux_host");
+}
+
+TEST(ExperimentReportingTest, SerializesFilesystemStatus) {
+    oscope::filesystem::SimpleFilesystem fs(64, 512);
+    auto status = fs.get_status();
+    auto json_fs = to_json(status);
+
+    EXPECT_EQ(json_fs.find("category")->as_string(), "filesystem_simulation");
+    EXPECT_EQ(json_fs.find("experiment")->as_string(), "simple_filesystem");
+    EXPECT_EQ(json_fs.find("result")->find("total_blocks")->as_int64(), 64);
+}
+
+TEST(ExperimentReportingTest, SerializesIpcExtensionsAndLifecycleDemonstrations) {
+    oscope::experiments::FifoExperimentResult fifo;
+    fifo.fifo_path = "/tmp/test";
+    fifo.message_sent = "hello";
+    fifo.message_received = "hello";
+    fifo.success = true;
+    auto json_fifo = to_json(fifo);
+    EXPECT_EQ(json_fifo.find("experiment")->as_string(), "fifo_ipc");
+    EXPECT_TRUE(json_fifo.find("success")->as_bool());
+
+    oscope::experiments::SharedMemoryExperimentResult shm;
+    shm.segment_name = "/shm_test";
+    shm.message_written = "data";
+    shm.message_read = "data";
+    shm.success = true;
+    auto json_shm = to_json(shm);
+    EXPECT_EQ(json_shm.find("experiment")->as_string(), "shared_memory_ipc");
+    EXPECT_TRUE(json_shm.find("success")->as_bool());
+
+    oscope::experiments::ZombieDemonstrationResult zombie;
+    zombie.child_pid = 1234;
+    zombie.observed_state = 'Z';
+    zombie.zombie_observed = true;
+    zombie.reaped_successfully = true;
+    auto json_zombie = to_json(zombie);
+    EXPECT_EQ(json_zombie.find("experiment")->as_string(), "zombie_demonstration");
+    EXPECT_TRUE(json_zombie.find("success")->as_bool());
+
+    oscope::experiments::OrphanDemonstrationResult orphan;
+    orphan.child_pid = 1235;
+    orphan.initial_parent_pid = 1000;
+    orphan.adopted_parent_pid = 1;
+    orphan.reparented_to_init_or_subreaper = true;
+    auto json_orphan = to_json(orphan);
+    EXPECT_EQ(json_orphan.find("experiment")->as_string(), "orphan_demonstration");
+    EXPECT_TRUE(json_orphan.find("success")->as_bool());
+
+    oscope::experiments::MessageQueueExperimentResult mq;
+    mq.queue_name = "/test_mq";
+    mq.messages_sent = 1;
+    mq.messages_received = 1;
+    mq.message_content = "test_mq_payload";
+    mq.success = true;
+    auto json_mq = to_json(mq);
+    EXPECT_EQ(json_mq.find("schema_version")->as_string(), "1.0.0");
+    EXPECT_EQ(json_mq.find("category")->as_string(), "linux_posix_experiment");
+    EXPECT_EQ(json_mq.find("experiment")->as_string(), "message_queue_ipc");
+    EXPECT_TRUE(json_mq.find("success")->as_bool());
+    EXPECT_EQ(json_mq.find("result")->find("message_content")->as_string(), "test_mq_payload");
+
+    oscope::experiments::ProcessExecResult pr_exec;
+    pr_exec.child_pid = 2345;
+    pr_exec.program_executed = "/bin/echo";
+    pr_exec.image_replaced = true;
+    pr_exec.captured_output = "hello_exec";
+    pr_exec.child_exit_code = 0;
+    pr_exec.success = true;
+    auto json_exec = to_json(pr_exec);
+    EXPECT_EQ(json_exec.find("schema_version")->as_string(), "1.0.0");
+    EXPECT_EQ(json_exec.find("category")->as_string(), "linux_posix_experiment");
+    EXPECT_EQ(json_exec.find("experiment")->as_string(), "process_exec");
+    EXPECT_TRUE(json_exec.find("success")->as_bool());
+    EXPECT_TRUE(json_exec.find("result")->find("image_replaced")->as_bool());
+}
+
+TEST(ExperimentReportingTest, SerializesSemaphoreAndProducerConsumerResults) {
+    oscope::synchronization::SemaphoreExperimentResult sem;
+    sem.num_threads = 4;
+    sem.iterations_per_thread = 1000;
+    sem.threads_completed = 4;
+    sem.expected_counter = 4000;
+    sem.actual_counter = 4000;
+    sem.initial_value = 1;
+    sem.success = true;
+
+    auto json_sem = to_json(sem);
+    EXPECT_EQ(json_sem.find("schema_version")->as_string(), "1.0.0");
+    EXPECT_EQ(json_sem.find("category")->as_string(), "synchronization");
+    EXPECT_EQ(json_sem.find("experiment")->as_string(), "posix_semaphore");
+    EXPECT_TRUE(json_sem.find("success")->as_bool());
+    EXPECT_EQ(json_sem.find("result")->find("expected_counter")->as_uint64(), 4000u);
+
+    oscope::synchronization::ProducerConsumerResult pc;
+    pc.buffer_capacity = 8;
+    pc.total_items = 64;
+    pc.num_producers = 2;
+    pc.num_consumers = 2;
+    pc.items_produced = 64;
+    pc.items_consumed = 64;
+    pc.items_preserved = true;
+    pc.max_buffer_occupancy_observed = 6;
+    pc.success = true;
+
+    auto json_pc = to_json(pc);
+    EXPECT_EQ(json_pc.find("schema_version")->as_string(), "1.0.0");
+    EXPECT_EQ(json_pc.find("category")->as_string(), "synchronization");
+    EXPECT_EQ(json_pc.find("experiment")->as_string(), "producer_consumer");
+    EXPECT_TRUE(json_pc.find("success")->as_bool());
+    EXPECT_TRUE(json_pc.find("result")->find("items_preserved")->as_bool());
+    EXPECT_EQ(json_pc.find("result")->find("buffer_capacity")->as_uint64(), 8u);
+}
+
 #endif
 
 } // namespace

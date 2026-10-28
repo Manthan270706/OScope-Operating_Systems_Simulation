@@ -9,10 +9,17 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <vector>
+#include "oscope/deadlock/coffman_conditions.hpp"
+#include "oscope/experiments/ipc_experiments.hpp"
+#include "oscope/experiments/process_lifecycle_experiment.hpp"
+#include "oscope/filesystem/simple_fs.hpp"
 #include "oscope/memory/allocation_strategy.hpp"
 #include "oscope/memory/memory_comparison.hpp"
 #include "oscope/memory/memory_manager.hpp"
+#include "oscope/monitoring/host_monitor.hpp"
+#include "oscope/paging/address_translation.hpp"
+#include "oscope/synchronization/petersons_algorithm.hpp"
+#include "oscope/synchronization/semaphore_experiment.hpp"
 #include "oscope/paging/fifo.hpp"
 #include "oscope/paging/lru.hpp"
 #include "oscope/paging/optimal.hpp"
@@ -688,9 +695,16 @@ bool run_experiments_cli(
                 if (format == OutputFormat::Json) {
                     target_accumulator.push_back(reporting::to_json(result));
                 } else {
+                    auto exec_res = experiments::run_process_exec_experiment();
                     out << "\n[Linux/POSIX Process Creation Experiment]\n";
                     display_process_experiment_result(out, result, format);
                     out << "\n";
+                    out << "[Linux/POSIX Process Image Replacement (exec*) Experiment]\n";
+                    out << "  Child PID:        " << exec_res.child_pid << "\n";
+                    out << "  Image Replaced:   " << (exec_res.image_replaced ? "YES" : "NO") << "\n";
+                    out << "  Captured Output:  " << exec_res.captured_output << "\n";
+                    out << "  Exit Code:        " << exec_res.child_exit_code << "\n";
+                    out << "  Status:           " << (exec_res.success ? "SUCCESS" : "FAILURE") << "\n\n";
                 }
                 break;
             }
@@ -710,9 +724,22 @@ bool run_experiments_cli(
                 if (format == OutputFormat::Json) {
                     target_accumulator.push_back(reporting::to_json(result));
                 } else {
+                    auto sem_res = synchronization::run_semaphore_experiment();
+                    auto pc_res = synchronization::run_producer_consumer_experiment();
                     out << "\n[Linux/POSIX Thread Synchronization Experiment]\n";
                     display_synchronization_experiment_result(out, result, format);
                     out << "\n";
+                    out << "[POSIX Semaphore Synchronization Experiment]\n";
+                    out << "  Status:                 " << (sem_res.success ? "SUCCESS" : "FAILURE") << "\n";
+                    out << "  Threads:                " << sem_res.num_threads << "\n";
+                    out << "  Expected Counter:       " << sem_res.expected_counter << "\n";
+                    out << "  Actual Counter:         " << sem_res.actual_counter << "\n\n";
+                    out << "[Classical Producer-Consumer Bounded-Buffer Experiment]\n";
+                    out << "  Status:                 " << (pc_res.success ? "SUCCESS" : "FAILURE") << "\n";
+                    out << "  Buffer Capacity:        " << pc_res.buffer_capacity << "\n";
+                    out << "  Items Produced:         " << pc_res.items_produced << "\n";
+                    out << "  Items Consumed:         " << pc_res.items_consumed << "\n";
+                    out << "  Items Preserved:        " << (pc_res.items_preserved ? "YES (Zero data loss or duplication)" : "NO") << "\n\n";
                 }
                 break;
             }
@@ -721,9 +748,16 @@ bool run_experiments_cli(
                 if (format == OutputFormat::Json) {
                     target_accumulator.push_back(reporting::to_json(result));
                 } else {
+                    auto mq_res = experiments::run_message_queue_experiment();
                     out << "\n[Linux/POSIX Pipe-based IPC Experiment]\n";
                     display_pipe_ipc_experiment_result(out, result, format);
                     out << "\n";
+                    out << "[Linux/POSIX Message Queue IPC Experiment]\n";
+                    out << "  Status:                 " << (mq_res.success ? "SUCCESS" : "FAILURE") << "\n";
+                    out << "  Queue Name:             " << mq_res.queue_name << "\n";
+                    out << "  Messages Sent:          " << mq_res.messages_sent << "\n";
+                    out << "  Messages Received:      " << mq_res.messages_received << "\n";
+                    out << "  Payload:                \"" << mq_res.message_content << "\"\n\n";
                 }
                 break;
             }
@@ -1699,19 +1733,20 @@ void print_disk_menu(std::ostream& out) {
         << "4. Circular SCAN (C-SCAN)\n"
         << "5. LOOK\n"
         << "6. Circular LOOK (C-LOOK)\n"
-        << "7. Compare all disk algorithms\n"
-        << "8. Return to Main Menu\n"
+        << "7. Last-In, First-Out (LIFO)\n"
+        << "8. Compare all disk algorithms\n"
+        << "9. Return to Main Menu\n"
         << "========================================\n";
 }
 
 std::optional<DiskChoice> read_disk_choice(std::istream& in, std::ostream& out) {
     int choice_val = 0;
     while (true) {
-        if (!read_int(in, out, "Enter your choice (1-8): ", choice_val)) {
+        if (!read_int(in, out, "Enter your choice (1-9): ", choice_val)) {
             return std::nullopt;
         }
-        if (choice_val < 1 || choice_val > 8) {
-            out << "Error: Choice must be between 1 and 8.\n";
+        if (choice_val < 1 || choice_val > 9) {
+            out << "Error: Choice must be between 1 and 9.\n";
             continue;
         }
         return static_cast<DiskChoice>(choice_val);
@@ -1866,7 +1901,7 @@ bool run_disk_cli(
             return true;
         }
 
-        bool needs_dir = (choice != DiskChoice::FCFS && choice != DiskChoice::SSTF);
+        bool needs_dir = (choice != DiskChoice::FCFS && choice != DiskChoice::SSTF && choice != DiskChoice::LIFO);
         auto config_opt = read_disk_config(in, prompt_stream, needs_dir);
         if (!config_opt.has_value()) {
             return false;
@@ -1892,6 +1927,7 @@ bool run_disk_cli(
                 case DiskChoice::CSCAN: algo = disk::DiskAlgorithm::CSCAN; break;
                 case DiskChoice::LOOK: algo = disk::DiskAlgorithm::LOOK; break;
                 case DiskChoice::CLOOK: algo = disk::DiskAlgorithm::CLOOK; break;
+                case DiskChoice::LIFO: algo = disk::DiskAlgorithm::LIFO; break;
                 default: algo = disk::DiskAlgorithm::FCFS; break;
             }
             auto res = disk::schedule_disk(algo, reqs_opt.value(), config_opt.value());
@@ -1901,6 +1937,426 @@ bool run_disk_cli(
                 display_disk_result(out, res);
             }
         }
+    }
+}
+
+void run_demo_address_translation(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    paging::AddressTranslator translator(4096);
+    translator.map_page(0, 5);
+    translator.map_page(1, 2);
+    translator.map_page(7, 10);
+
+    auto t1 = translator.translate(4100); // Hit (page 1, offset 4 -> frame 2, PA 8196)
+    auto t2 = translator.translate(3 * 4096 + 20); // Miss/Fault (page 3 unmapped)
+
+    std::vector<uint64_t> vas = {4096 + 10, 8192 + 20, 12288 + 30, 16384 + 40, 4096 + 50};
+    auto dp_result = paging::AddressTranslator::simulate_demand_paging(4096, 3, vas);
+    auto thrash_result = paging::AddressTranslator::simulate_thrashing({1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4}, 1, 4);
+
+    if (format == OutputFormat::Json) {
+        if (json_accumulator) {
+            json_accumulator->push_back(reporting::to_json(t1));
+            json_accumulator->push_back(reporting::to_json(dp_result));
+        } else {
+            out << reporting::to_json(t1).serialize(true) << "\n";
+        }
+        return;
+    }
+
+    out << "\n=== Virtual Address Translation & Demand Paging Demo ===\n";
+    out << "Configured Page Size: " << translator.page_size() << " bytes (Offset width: 12 bits)\n\n";
+    out << "1. Virtual Address Translation Example:\n";
+    out << "  Virtual Address:   " << t1.virtual_address << " (0x" << std::hex << t1.virtual_address << std::dec << ")\n";
+    out << "  Page Number:       " << t1.page_number << "\n";
+    out << "  Page Offset:       " << t1.offset << " (preserved across translation)\n";
+    out << "  Page Table Lookup: Present in Frame " << t1.frame_number << "\n";
+    out << "  Physical Address:  " << t1.physical_address << " (0x" << std::hex << t1.physical_address << std::dec << ")\n\n";
+
+    out << "2. Unmapped Page Reference (Fault Simulation):\n";
+    out << "  Virtual Address:   " << t2.virtual_address << "\n";
+    out << "  Page Number:       " << t2.page_number << " -> Page Fault: " << t2.message << "\n\n";
+
+    out << "3. Demand Paging Event Trace (3 Frames, FIFO Replacement):\n";
+    out << "  Step | Virtual Addr | Page | Offset | Fault? | Frame | Victim Page\n";
+    out << "  -----+--------------+------+--------+--------+-------+------------\n";
+    int step_idx = 1;
+    for (const auto& s : dp_result.steps) {
+        out << "  " << std::setw(4) << step_idx++ << " | "
+            << std::setw(12) << s.virtual_address << " | "
+            << std::setw(4) << s.page_number << " | "
+            << std::setw(6) << s.offset << " | "
+            << (s.page_fault ? " YES   " : "  NO   ") << "| "
+            << std::setw(5) << s.frame_number << " | "
+            << (s.victim_page >= 0 ? std::to_string(s.victim_page) : "-") << "\n";
+    }
+    out << "  Summary: " << dp_result.total_accesses << " accesses, "
+        << dp_result.page_faults << " faults, " << dp_result.page_hits << " hits (Fault Rate: "
+        << std::fixed << std::setprecision(2) << (dp_result.fault_rate * 100.0) << "%)\n\n";
+
+    out << "4. Thrashing Curve Analysis (Faults vs Available Frames):\n";
+    for (const auto& pt : thrash_result.points) {
+        out << "  Frames: " << pt.frames << " -> Faults: " << pt.page_faults
+            << " (" << std::fixed << std::setprecision(1) << (pt.fault_rate * 100.0) << "% fault rate)\n";
+    }
+    out << "  Working Set Knee (Thrashing Threshold): " << thrash_result.thrashing_threshold_frames << " frames.\n";
+}
+
+void run_demo_petersons_algorithm(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    synchronization::PetersonsAlgorithm algo;
+    auto result = algo.simulate(2, 0);
+
+    if (format == OutputFormat::Json) {
+        if (json_accumulator) {
+            json_accumulator->push_back(reporting::to_json(result));
+        } else {
+            out << reporting::to_json(result).serialize(true) << "\n";
+        }
+        return;
+    }
+
+    out << "\n=== Peterson's Algorithm Two-Process Simulation ===\n";
+    out << "Educational Verification of Mutual Exclusion, Progress, and Bounded Waiting.\n\n";
+    out << "Step-by-Step Execution Trace:\n";
+    out << "  Step | Process | flag[0] | flag[1] | turn | In CS? | Description\n";
+    out << "  -----+---------+---------+---------+------+--------+---------------------------------------\n";
+    int sidx = 1;
+    for (const auto& s : result.trace) {
+        out << "  " << std::setw(4) << sidx++ << " | "
+            << "   P" << s.process_id << "   | "
+            << (s.flag0 ? " true  " : " false ") << "| "
+            << (s.flag1 ? " true  " : " false ") << "| "
+            << std::setw(4) << s.turn << " | "
+            << "P0:" << s.p0_in_cs << " P1:" << s.p1_in_cs << " | "
+            << s.description << "\n";
+    }
+    out << "\nSimulation Invariant Check:\n";
+    out << "  Mutual Exclusion Maintained: " << (result.mutual_exclusion_maintained ? "PASSED (both processes never in CS simultaneously)" : "FAILED") << "\n";
+    out << "  P0 Critical Section Entries: " << result.p0_critical_entries << "\n";
+    out << "  P1 Critical Section Entries: " << result.p1_critical_entries << "\n\n";
+    out << "Architectural Note:\n  " << result.explanation << "\n";
+}
+
+void run_demo_coffman_conditions(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    auto report = deadlock::CoffmanEvaluator::evaluate(true, true, true, true);
+
+    if (format == OutputFormat::Json) {
+        if (json_accumulator) {
+            json_accumulator->push_back(reporting::to_json(report));
+        } else {
+            out << reporting::to_json(report).serialize(true) << "\n";
+        }
+        return;
+    }
+
+    out << "\n=== Coffman Deadlock Conditions & Prevention Analysis ===\n\n";
+    out << deadlock::CoffmanEvaluator::get_educational_overview() << "\n\n";
+    out << "Status of the Four Conditions in Active Scenario:\n";
+    for (const auto& cond : report.condition_analyses) {
+        out << "  * " << cond << "\n";
+    }
+    out << "\nVerdict: " << report.summary << "\n\n";
+    out << "Standard Deadlock Prevention Strategies (Breaking individual conditions):\n";
+    for (const auto& m : report.prevention_methods) {
+        out << "  " << m << "\n";
+    }
+}
+
+void run_demo_host_monitoring(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    auto snap = monitoring::HostMonitor::take_snapshot();
+
+    if (format == OutputFormat::Json) {
+        if (json_accumulator) {
+            json_accumulator->push_back(reporting::to_json(snap));
+        } else {
+            out << reporting::to_json(snap).serialize(true) << "\n";
+        }
+        return;
+    }
+
+    out << "\n=== Linux Host Resource Monitoring (Real System Observations) ===\n";
+    out << "Source:     " << snap.source << "\n";
+    out << "Timestamp:  " << snap.timestamp << "\n\n";
+
+    out << "1. Host CPU Metrics (/proc/stat):\n";
+    if (snap.cpu.valid) {
+        out << "  Total CPU Usage:  " << std::fixed << std::setprecision(2) << snap.cpu.total_cpu_usage_percent << " %\n";
+        out << "  User Space:       " << snap.cpu.user_percent << " %\n";
+        out << "  Kernel / System:  " << snap.cpu.system_percent << " %\n";
+        out << "  Idle:             " << snap.cpu.idle_percent << " %\n";
+    } else {
+        out << "  CPU statistics unavailable.\n";
+    }
+
+    out << "\n2. Host Memory Metrics (/proc/meminfo):\n";
+    if (snap.memory.valid) {
+        out << "  Total RAM:        " << snap.memory.total_kb << " kB (" << (snap.memory.total_kb / 1024) << " MB)\n";
+        out << "  Used RAM:         " << snap.memory.used_kb << " kB (" << (snap.memory.used_kb / 1024) << " MB)\n";
+        out << "  Available RAM:    " << snap.memory.available_kb << " kB (" << (snap.memory.available_kb / 1024) << " MB)\n";
+        out << "  Utilization:      " << std::fixed << std::setprecision(2) << snap.memory.used_percent << " %\n";
+    } else {
+        out << "  Memory statistics unavailable.\n";
+    }
+
+    out << "\n3. Self-Process Observation (/proc/self/stat):\n";
+    if (snap.self_process.valid) {
+        out << "  PID:              " << snap.self_process.pid << "\n";
+        out << "  Executable Name:  " << snap.self_process.comm << "\n";
+        out << "  Process State:    " << snap.self_process.state << "\n";
+        out << "  User CPU Ticks:   " << snap.self_process.utime_ticks << "\n";
+        out << "  System CPU Ticks: " << snap.self_process.stime_ticks << "\n";
+        out << "  Virtual Memory:   " << (snap.self_process.vm_size_bytes / 1024) << " kB\n";
+        out << "  Resident Set:     " << snap.self_process.rss_kb << " kB\n";
+    }
+
+    if (!snap.disks.empty()) {
+        out << "\n4. Host Block Device I/O (/proc/diskstats):\n";
+        for (const auto& d : snap.disks) {
+            out << "  Device: " << std::setw(8) << d.device_name
+                << " | Reads: " << std::setw(6) << d.reads_completed
+                << " | Sectors Read: " << std::setw(8) << d.sectors_read
+                << " | Writes: " << std::setw(6) << d.writes_completed
+                << " | Sectors Written: " << d.sectors_written << "\n";
+        }
+    }
+}
+
+void run_demo_filesystem(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    filesystem::SimpleFilesystem fs(32, 512);
+    fs.create_directory("/home");
+    fs.create_directory("/home/docs");
+
+    // 1. Contiguous allocation
+    fs.create_file("/home/file_contiguous.bin", 1500, filesystem::AllocationStrategy::Contiguous);
+
+    // 2. Linked allocation
+    fs.create_file("/home/file_linked.txt", 1000, filesystem::AllocationStrategy::Linked);
+
+    // 3. Indexed allocation
+    fs.create_file("/home/file_indexed.dat", 1000, filesystem::AllocationStrategy::Indexed);
+
+    auto status = fs.get_status();
+
+    if (format == OutputFormat::Json) {
+        if (json_accumulator) {
+            json_accumulator->push_back(reporting::to_json(status));
+        } else {
+            out << reporting::to_json(status).serialize(true) << "\n";
+        }
+        return;
+    }
+
+    out << "\n=== Educational File System Simulation ===\n";
+    out << "Total Blocks: " << status.total_blocks << " (Block Size: " << status.block_size << " bytes)\n";
+    out << "Used Blocks:  " << status.used_blocks << " | Free Blocks: " << status.free_blocks << "\n";
+    out << "Directories:  " << status.directory_count << " | Files: " << status.file_count << "\n\n";
+
+    out << "Directory Hierarchy Traversal (/home):\n";
+    auto entries = fs.list_directory("/home");
+    if (entries) {
+        for (const auto& e : *entries) {
+            out << "  [" << (e.is_directory ? "DIR " : "FILE") << "] "
+                << std::setw(25) << e.name
+                << " (Inode " << e.inode_id << ", " << e.size_bytes << " bytes)\n";
+        }
+    }
+
+    out << "\nAllocation Strategy Comparison:\n";
+    auto m1 = fs.get_metadata("/home/file_contiguous.bin");
+    if (m1) {
+        out << "  1. Contiguous:  " << m1->name << " -> Start Block: " << m1->start_block
+            << ", Count: " << m1->block_count << " [Consecutive block range]\n";
+    }
+    auto m2 = fs.get_metadata("/home/file_linked.txt");
+    if (m2) {
+        out << "  2. Linked:      " << m2->name << " -> Blocks: ";
+        for (int b : m2->allocated_blocks) out << b << " ";
+        out << "[Pointers link arbitrary free blocks]\n";
+    }
+    auto m3 = fs.get_metadata("/home/file_indexed.dat");
+    if (m3) {
+        out << "  3. Indexed:     " << m3->name << " -> Index Block: " << m3->index_block
+            << ", Data Blocks: ";
+        for (int b : m3->allocated_blocks) out << b << " ";
+        out << "[Direct index block table]\n";
+    }
+
+    out << "\nDisk Block Free Space Bitmap (0 = Free, 1 = Allocated):\n  ";
+    for (size_t i = 0; i < status.block_bitmap.size(); ++i) {
+        out << (status.block_bitmap[i] ? "1" : "0");
+        if ((i + 1) % 8 == 0) out << " ";
+    }
+    out << "\n";
+}
+
+void run_demo_sync(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    if (format == OutputFormat::Json) {
+        synchronization::PetersonsAlgorithm algo;
+        auto peterson_res = algo.simulate(2, 0);
+        auto sem = synchronization::run_semaphore_experiment(4, 5000);
+        auto pc = synchronization::run_producer_consumer_experiment(5, 50, 2, 2);
+
+        if (json_accumulator) {
+            json_accumulator->push_back(reporting::to_json(peterson_res));
+            json_accumulator->push_back(reporting::to_json(sem));
+            json_accumulator->push_back(reporting::to_json(pc));
+        } else {
+            std::vector<reporting::JsonValue> acc;
+            acc.push_back(reporting::to_json(peterson_res));
+            acc.push_back(reporting::to_json(sem));
+            acc.push_back(reporting::to_json(pc));
+            out << reporting::JsonValue::array(std::move(acc)).serialize(true) << "\n";
+        }
+        return;
+    }
+
+    run_demo_petersons_algorithm(out, format, json_accumulator);
+
+    auto sem = synchronization::run_semaphore_experiment(4, 5000);
+    auto pc = synchronization::run_producer_consumer_experiment(5, 50, 2, 2);
+
+    out << "\n=== POSIX Semaphore Synchronization Demonstration ===\n";
+    out << "Threads:                " << sem.num_threads << "\n";
+    out << "Iterations / Thread:    " << sem.iterations_per_thread << "\n";
+    out << "Expected Counter:       " << sem.expected_counter << "\n";
+    out << "Actual Counter:         " << sem.actual_counter << "\n";
+    out << "Status:                 " << (sem.success ? "SUCCESS" : "FAILURE") << "\n\n";
+
+    out << "=== Classical Producer-Consumer (Bounded-Buffer) Demonstration ===\n";
+    out << "Buffer Capacity:        " << pc.buffer_capacity << " slots\n";
+    out << "Total Items Produced:   " << pc.items_produced << "\n";
+    out << "Total Items Consumed:   " << pc.items_consumed << "\n";
+    out << "Items Preserved:        " << (pc.items_preserved ? "YES (Zero data loss or duplication)" : "NO") << "\n";
+    out << "Peak Buffer Occupancy:  " << pc.max_buffer_occupancy_observed << " / " << pc.buffer_capacity << "\n";
+    out << "Status:                 " << (pc.success ? "SUCCESS" : "FAILURE") << "\n";
+}
+
+void run_demo_ipc_extensions(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    auto fifo = experiments::run_fifo_experiment("OScope Named Pipe Demo");
+    auto shm = experiments::run_shared_memory_experiment("OScope Shared Memory Demo");
+    auto mq = experiments::run_message_queue_experiment("OScope Message Queue Demo");
+
+    if (format == OutputFormat::Json) {
+        if (json_accumulator) {
+            json_accumulator->push_back(reporting::to_json(fifo));
+            json_accumulator->push_back(reporting::to_json(shm));
+            json_accumulator->push_back(reporting::to_json(mq));
+        } else {
+            std::vector<reporting::JsonValue> acc;
+            acc.push_back(reporting::to_json(fifo));
+            acc.push_back(reporting::to_json(shm));
+            acc.push_back(reporting::to_json(mq));
+            out << reporting::JsonValue::array(std::move(acc)).serialize(true) << "\n";
+        }
+        return;
+    }
+
+    out << "\n=== Linux/POSIX IPC Extensions Demonstration ===\n\n";
+    out << "1. POSIX Named Pipe (FIFO) Demonstration:\n";
+    out << "  FIFO Path:          " << fifo.fifo_path << "\n";
+    out << "  Status:             " << (fifo.success ? "SUCCESS" : "FAILURE") << "\n";
+    out << "  Message Sent:       \"" << fifo.message_sent << "\"\n";
+    out << "  Message Received:   \"" << fifo.message_received << "\"\n";
+    out << "  Resource Cleanup:   Confirmed unlinked (no dangling filesystem node).\n\n";
+
+    out << "2. POSIX Shared Memory (shm_open / mmap) Demonstration:\n";
+    out << "  Segment Name:       " << shm.segment_name << "\n";
+    out << "  Status:             " << (shm.success ? "SUCCESS" : "FAILURE") << "\n";
+    out << "  Message Written:    \"" << shm.message_written << "\"\n";
+    out << "  Message Read:       \"" << shm.message_read << "\"\n";
+    out << "  Resource Cleanup:   Confirmed unmapped and unlinked via shm_unlink().\n\n";
+
+    out << "3. POSIX Message Queue (mq_open / mq_send / mq_receive) Demonstration:\n";
+    out << "  Queue Name:         " << mq.queue_name << "\n";
+    out << "  Status:             " << (mq.success ? "SUCCESS" : "FAILURE") << "\n";
+    out << "  Messages Sent:      " << mq.messages_sent << "\n";
+    out << "  Messages Received:  " << mq.messages_received << "\n";
+    out << "  Message Payload:    \"" << mq.message_content << "\"\n";
+    out << "  Resource Cleanup:   Confirmed closed and unlinked via mq_unlink().\n";
+}
+
+void run_demo_process_lifecycle(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    auto exec_res = experiments::run_process_exec_experiment();
+    auto zombie = experiments::run_zombie_demonstration();
+    auto orphan = experiments::run_orphan_demonstration();
+
+    if (format == OutputFormat::Json) {
+        if (json_accumulator) {
+            json_accumulator->push_back(reporting::to_json(exec_res));
+            json_accumulator->push_back(reporting::to_json(zombie));
+            json_accumulator->push_back(reporting::to_json(orphan));
+        } else {
+            std::vector<reporting::JsonValue> acc;
+            acc.push_back(reporting::to_json(exec_res));
+            acc.push_back(reporting::to_json(zombie));
+            acc.push_back(reporting::to_json(orphan));
+            out << reporting::JsonValue::array(std::move(acc)).serialize(true) << "\n";
+        }
+        return;
+    }
+
+    out << "\n=== Linux Process Lifecycle (Exec, Zombie & Orphan) Demonstration ===\n\n";
+    out << "1. Process Image Replacement (exec*()) Demonstration:\n";
+    out << "  Child PID:          " << exec_res.child_pid << "\n";
+    out << "  Replacement Target: " << exec_res.program_executed << "\n";
+    out << "  Image Replaced:     " << (exec_res.image_replaced ? "YES" : "NO") << "\n";
+    out << "  Captured Output:    " << exec_res.captured_output << "\n";
+    out << "  Exit Code:          " << exec_res.child_exit_code << "\n";
+    out << "  Status:             " << (exec_res.success ? "SUCCESS" : "FAILURE") << "\n\n";
+
+    out << "2. Zombie Process Demonstration:\n";
+    out << "  Child PID:          " << zombie.child_pid << "\n";
+    out << "  Observed /proc State: '" << zombie.observed_state << "' (Zombie in process table before parent wait)\n";
+    out << "  Reaped by Parent:   " << (zombie.reaped_successfully ? "SUCCESS (via waitpid(), freeing child PCB)" : "FAILURE") << "\n";
+    out << "  Explanation:        " << zombie.details << "\n\n";
+
+    out << "3. Orphan Process Demonstration:\n";
+    out << "  Child PID:          " << orphan.child_pid << "\n";
+    out << "  Original Parent:    PID " << orphan.initial_parent_pid << "\n";
+    out << "  Adopted Parent:     PID " << orphan.adopted_parent_pid << " (init / systemd / subreaper)\n";
+    out << "  Reparenting Confirmed: " << (orphan.reparented_to_init_or_subreaper ? "YES" : "NO") << "\n";
+    out << "  Explanation:        " << orphan.details << "\n";
+}
+
+void run_demo_disk(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    std::vector<int> requests = {98, 183, 37, 122, 14, 124, 65, 67};
+    disk::DiskConfig config;
+    config.initial_head = 53;
+    config.min_cylinder = 0;
+    config.max_cylinder = 199;
+    config.direction = disk::Direction::Increasing;
+
+    auto comp_result = disk::compare_all_disk(requests, config);
+
+    if (format == OutputFormat::Json) {
+        if (json_accumulator) {
+            json_accumulator->push_back(reporting::to_json(comp_result));
+        } else {
+            out << reporting::to_json(comp_result).serialize(true) << "\n";
+        }
+        return;
+    }
+
+    out << "\n=== Disk Scheduling Benchmark Comparison Demonstration ===\n";
+    out << "Initial Head: 53 | Cylinder Range: [0, 199] | Direction: Increasing (Up)\n";
+    out << "Workload Requests: 98, 183, 37, 122, 14, 124, 65, 67\n\n";
+    display_disk_comparison_table(out, comp_result);
+}
+
+void run_all_demos(std::ostream& out, OutputFormat format) {
+    std::vector<reporting::JsonValue> acc;
+    auto* acc_ptr = (format == OutputFormat::Json) ? &acc : nullptr;
+
+    run_demo_address_translation(out, format, acc_ptr);
+    run_demo_sync(out, format, acc_ptr);
+    run_demo_coffman_conditions(out, format, acc_ptr);
+    run_demo_host_monitoring(out, format, acc_ptr);
+    run_demo_filesystem(out, format, acc_ptr);
+    run_demo_ipc_extensions(out, format, acc_ptr);
+    run_demo_process_lifecycle(out, format, acc_ptr);
+    run_demo_disk(out, format, acc_ptr);
+
+    if (format == OutputFormat::Json) {
+        out << reporting::JsonValue::array(std::move(acc)).serialize(true) << "\n";
     }
 }
 

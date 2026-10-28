@@ -431,3 +431,158 @@ OScope structures disk scheduling results under `"category": "disk_scheduling"`.
   "error": null
 }
 ```
+
+---
+
+## 13. Extended Module Schemas (v1.0.0)
+
+OScope extends structured JSON reporting across virtual memory, Peterson's algorithm, Coffman conditions, host monitoring, simple filesystem, and POSIX lifecycle/IPC experiments.
+
+### 13.1 Address Translation & Demand Paging Schema
+
+- **Category:** `paging_virtual_memory`
+- **Experiment:** `address_translation` or `demand_paging`
+- **Result Fields (address_translation):**
+  - `virtual_address` (uint32)
+  - `page_size` (uint32)
+  - `page_number` (uint32)
+  - `offset` (uint32)
+  - `frame_number` (uint32)
+  - `physical_address` (uint32)
+  - `valid` (boolean)
+  - `page_fault` (boolean)
+- **Result Fields (demand_paging):**
+  - `num_frames` (uint32)
+  - `page_size` (uint32)
+  - `total_accesses` (uint32)
+  - `page_faults` (uint32)
+  - `fault_rate` (number)
+  - `access_history` (array of objects detailing step, virtual_address, page_number, offset, frame_number, page_fault, and evicted_page)
+
+### 13.2 Peterson's Algorithm Simulation Schema
+
+- **Category:** `synchronization`
+- **Experiment:** `petersons_algorithm`
+- **Result Fields:**
+  - `mutual_exclusion_maintained` (boolean)
+  - `p0_cs_entries` (uint32)
+  - `p1_cs_entries` (uint32)
+  - `total_steps` (uint32)
+  - `trace` (array of objects detailing step_number, process_id, flag_p0, flag_p1, turn, action)
+  - `educational_notes` (string)
+
+### 13.3 Coffman Deadlock Conditions Schema
+
+- **Category:** `deadlock_management`
+- **Experiment:** `coffman_conditions`
+- **Result Fields:**
+  - `mutual_exclusion` (boolean)
+  - `hold_and_wait` (boolean)
+  - `no_preemption` (boolean)
+  - `circular_wait` (boolean)
+  - `deadlock_vulnerable` (boolean)
+  - `summary` (string)
+  - `condition_details` (array of strings)
+  - `prevention_recommendations` (array of strings)
+
+### 13.4 Linux Host Resource Monitoring Schema
+
+- **Category:** `linux_monitoring`
+- **Experiment:** `host_observation`
+- **Result Fields:**
+  - `source` (string: `"real_linux_host"`)
+  - `timestamp` (string)
+  - `cpu`: `total_usage_percent`, `user_percent`, `system_percent`, `idle_percent`
+  - `memory`: `total_ram_bytes`, `used_ram_bytes`, `available_ram_bytes`, `used_percent`
+  - `self_process`: `pid`, `comm`, `state`, `utime_ticks`, `stime_ticks`, `rss_bytes`, `vsize_bytes`
+  - `disk_devices` (array of device observations: `device_name`, `reads_completed`, `sectors_read`, `writes_completed`, `sectors_written`)
+
+### 13.5 Educational File System Simulation Schema
+
+- **Category:** `filesystem_simulation`
+- **Experiment:** `simple_filesystem`
+- **Result Fields:**
+  - `total_blocks` (uint32)
+  - `block_size_bytes` (uint32)
+  - `used_blocks` (uint32)
+  - `free_blocks` (uint32)
+  - `total_inodes` (uint32)
+  - `used_inodes` (uint32)
+  - `root_entries` (array of directory entries: `name`, `inode_number`, `is_directory`, `size_bytes`)
+  - `allocation_traces` (array of file allocation traces: `filename`, `strategy`, `allocated_blocks`, `start_block`, `block_count`, `index_block`)
+  - `free_block_bitmap` (array of booleans)
+
+### 13.6 POSIX FIFO & Shared Memory IPC Schemas
+
+- **Category:** `linux_posix_experiment`
+- **Experiment:** `fifo_ipc`
+  - `fifo_path` (string)
+  - `message_sent` (string)
+  - `message_received` (string)
+  - `data_matched` (boolean)
+  - `details` (string)
+- **Experiment:** `shared_memory_ipc`
+  - `shm_name` (string)
+  - `segment_size_bytes` (uint64)
+  - `payload_written` (string)
+  - `payload_read` (string)
+  - `data_matched` (boolean)
+  - `details` (string)
+
+### 13.7 Process Lifecycle (Zombie & Orphan) Schemas
+
+- **Category:** `linux_posix_experiment`
+- **Experiment:** `zombie_demonstration`
+  - `child_pid` (int64)
+  - `observed_zombie_state` (string, e.g. `"Z"`)
+  - `reaped_by_parent` (boolean)
+  - `exit_status` (int64)
+  - `details` (string)
+- **Experiment:** `orphan_demonstration`
+  - `child_pid` (int64)
+  - `initial_parent_pid` (int64)
+  - `adopted_parent_pid` (int64)
+  - `reparented_to_init_or_subreaper` (boolean)
+  - `details` (string)
+
+### 13.8 POSIX Semaphores & Producer-Consumer Synchronization Schemas
+
+- **Category:** `synchronization`
+- **Experiment:** `posix_semaphore`
+  - `num_threads` (uint64)
+  - `iterations_per_thread` (uint64)
+  - `threads_completed` (uint64)
+  - `expected_counter` (uint64)
+  - `actual_counter` (uint64)
+  - `counter_match` (boolean)
+  - `initial_value` (uint64)
+- **Experiment:** `producer_consumer`
+  - `buffer_capacity` (uint64)
+  - `total_items` (uint64)
+  - `num_producers` (uint64)
+  - `num_consumers` (uint64)
+  - `items_produced` (uint64)
+  - `items_consumed` (uint64)
+  - `items_preserved` (boolean)
+  - `max_buffer_occupancy_observed` (uint64)
+
+### 13.9 POSIX Message Queue Schema
+
+- **Category:** `linux_posix_experiment`
+- **Experiment:** `message_queue_ipc`
+  - `queue_name` (string)
+  - `messages_sent` (int64)
+  - `messages_received` (int64)
+  - `message_content` (string)
+  - `details` (string)
+
+### 13.10 Process Image Replacement (Exec*) Schema
+
+- **Category:** `linux_posix_experiment`
+- **Experiment:** `process_exec`
+  - `child_pid` (int64)
+  - `program_executed` (string)
+  - `image_replaced` (boolean)
+  - `captured_output` (string)
+  - `child_exit_code` (int64)
+  - `details` (string)
