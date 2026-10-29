@@ -68,6 +68,7 @@ public:
     // Free space & allocation inspection
     FilesystemStatus get_status() const;
     const std::vector<bool>& bitmap() const noexcept { return bitmap_; }
+    const std::vector<FileMetadata>& inodes() const noexcept { return inodes_; }
 
 private:
     int allocate_contiguous_blocks(int count, std::vector<int>& out_blocks);

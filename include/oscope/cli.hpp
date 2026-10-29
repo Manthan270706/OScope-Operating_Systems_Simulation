@@ -176,8 +176,14 @@ void run_demo_sync(std::ostream& out, OutputFormat format = OutputFormat::HumanR
 void run_demo_coffman_conditions(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
 void run_demo_host_monitoring(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
 void run_demo_filesystem(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_demo_filesystem_fragmentation(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_demo_filesystem_capacity(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_filesystem_operations(std::istream& in, std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_paging_operations(std::istream& in, std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
 void run_demo_ipc_extensions(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
 void run_demo_process_lifecycle(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_demo_process_state_machine(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
+void run_process_operations(std::istream& in, std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
 void run_demo_disk(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable, std::vector<reporting::JsonValue>* json_accumulator = nullptr);
 void run_all_demos(std::ostream& out, OutputFormat format = OutputFormat::HumanReadable);
 

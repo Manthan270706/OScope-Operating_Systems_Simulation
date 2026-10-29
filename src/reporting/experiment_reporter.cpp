@@ -450,6 +450,58 @@ JsonValue to_json(const paging::DemandPagingResult& result) {
     details.set("page_faults", JsonValue::integer(result.page_faults));
     details.set("page_hits", JsonValue::integer(result.page_hits));
     details.set("fault_rate", JsonValue::string(std::to_string(result.fault_rate)));
+
+    std::vector<JsonValue> steps;
+    for (const auto& s : result.steps) {
+        JsonValue st = JsonValue::object();
+        st.set("virtual_address", JsonValue::unsigned_integer(s.virtual_address));
+        st.set("page_number", JsonValue::unsigned_integer(s.page_number));
+        st.set("offset", JsonValue::unsigned_integer(s.offset));
+        st.set("page_fault", JsonValue::boolean(s.page_fault));
+        st.set("frame_number", JsonValue::integer(s.frame_number));
+        st.set("physical_address", JsonValue::unsigned_integer(s.physical_address));
+        st.set("victim_page", JsonValue::integer(s.victim_page));
+        std::vector<JsonValue> fc;
+        for (int c : s.frame_contents) {
+            fc.push_back(JsonValue::integer(c));
+        }
+        st.set("frame_contents", JsonValue::array(std::move(fc)));
+        steps.push_back(std::move(st));
+    }
+    details.set("steps", JsonValue::array(std::move(steps)));
+
+    root.set("result", std::move(details));
+    root.set("error", JsonValue::null());
+    return root;
+}
+
+JsonValue to_json(const paging::ThrashingSimulationResult& result) {
+    JsonValue root = JsonValue::object();
+    root.set("schema_version", JsonValue::string(kSchemaVersion));
+    root.set("category", JsonValue::string("paging_virtual_memory"));
+    root.set("experiment", JsonValue::string("thrashing_curve"));
+    root.set("status", JsonValue::string("success"));
+    root.set("success", JsonValue::boolean(true));
+
+    JsonValue details = JsonValue::object();
+    details.set("thrashing_threshold_frames", JsonValue::integer(result.thrashing_threshold_frames));
+
+    std::vector<JsonValue> pts;
+    for (const auto& pt : result.points) {
+        JsonValue p = JsonValue::object();
+        p.set("frames", JsonValue::integer(pt.frames));
+        p.set("page_faults", JsonValue::integer(pt.page_faults));
+        p.set("fault_rate", JsonValue::string(std::to_string(pt.fault_rate)));
+        pts.push_back(std::move(p));
+    }
+    details.set("points", JsonValue::array(std::move(pts)));
+
+    std::vector<JsonValue> refs;
+    for (int r : result.reference_string) {
+        refs.push_back(JsonValue::integer(r));
+    }
+    details.set("reference_string", JsonValue::array(std::move(refs)));
+
     root.set("result", std::move(details));
     root.set("error", JsonValue::null());
     return root;
@@ -506,12 +558,43 @@ JsonValue to_json(const monitoring::HostMonitoringSnapshot& result) {
     details.set("source", JsonValue::string(result.source));
     details.set("timestamp", JsonValue::string(result.timestamp));
     details.set("cpu_usage_percent", JsonValue::string(std::to_string(result.cpu.total_cpu_usage_percent)));
+    details.set("cpu_user_percent", JsonValue::string(std::to_string(result.cpu.user_percent)));
+    details.set("cpu_system_percent", JsonValue::string(std::to_string(result.cpu.system_percent)));
+    details.set("cpu_idle_percent", JsonValue::string(std::to_string(result.cpu.idle_percent)));
     details.set("memory_total_kb", JsonValue::unsigned_integer(result.memory.total_kb));
     details.set("memory_used_kb", JsonValue::unsigned_integer(result.memory.used_kb));
+    details.set("memory_available_kb", JsonValue::unsigned_integer(result.memory.available_kb));
+    details.set("memory_free_kb", JsonValue::unsigned_integer(result.memory.free_kb));
     details.set("memory_used_percent", JsonValue::string(std::to_string(result.memory.used_percent)));
+    details.set("uptime_seconds", JsonValue::string(std::to_string(result.system.uptime_seconds)));
+    details.set("load_1min", JsonValue::string(std::to_string(result.system.load_1min)));
+    details.set("load_5min", JsonValue::string(std::to_string(result.system.load_5min)));
+    details.set("load_15min", JsonValue::string(std::to_string(result.system.load_15min)));
+    details.set("total_processes", JsonValue::integer(result.system.total_processes));
+    details.set("running_processes", JsonValue::integer(result.system.running_processes));
+    details.set("disk_total_bytes", JsonValue::unsigned_integer(result.system.disk_total_bytes));
+    details.set("disk_used_bytes", JsonValue::unsigned_integer(result.system.disk_used_bytes));
+    details.set("disk_available_bytes", JsonValue::unsigned_integer(result.system.disk_available_bytes));
+    details.set("disk_used_percent", JsonValue::string(std::to_string(result.system.disk_used_percent)));
     details.set("self_pid", JsonValue::integer(result.self_process.pid));
+    details.set("self_ppid", JsonValue::integer(result.self_process.ppid));
+    details.set("self_comm", JsonValue::string(result.self_process.comm));
     details.set("self_state", JsonValue::string(std::string(1, result.self_process.state)));
     details.set("self_rss_kb", JsonValue::unsigned_integer(result.self_process.rss_kb));
+    details.set("self_vm_size_bytes", JsonValue::unsigned_integer(result.self_process.vm_size_bytes));
+
+    JsonValue disks_arr = JsonValue::array();
+    for (const auto& d : result.disks) {
+        JsonValue d_obj = JsonValue::object();
+        d_obj.set("device_name", JsonValue::string(d.device_name));
+        d_obj.set("reads_completed", JsonValue::unsigned_integer(d.reads_completed));
+        d_obj.set("sectors_read", JsonValue::unsigned_integer(d.sectors_read));
+        d_obj.set("writes_completed", JsonValue::unsigned_integer(d.writes_completed));
+        d_obj.set("sectors_written", JsonValue::unsigned_integer(d.sectors_written));
+        disks_arr.push_back(std::move(d_obj));
+    }
+    details.set("disks", std::move(disks_arr));
+
     root.set("result", std::move(details));
     root.set("error", result.success ? JsonValue::null() : JsonValue::string(result.error_message));
     return root;
@@ -532,10 +615,105 @@ JsonValue to_json(const filesystem::FilesystemStatus& result) {
     details.set("free_blocks", JsonValue::integer(result.free_blocks));
     details.set("file_count", JsonValue::integer(result.file_count));
     details.set("directory_count", JsonValue::integer(result.directory_count));
+
+    std::vector<JsonValue> bitmap_arr;
+    bitmap_arr.reserve(result.block_bitmap.size());
+    for (bool bit : result.block_bitmap) {
+        bitmap_arr.push_back(JsonValue::boolean(bit));
+    }
+    details.set("block_bitmap", JsonValue::array(std::move(bitmap_arr)));
+
     root.set("result", std::move(details));
     root.set("error", JsonValue::null());
     return root;
 }
+
+JsonValue to_json(const filesystem::SimpleFilesystem& fs, const std::vector<std::string>& operation_logs) {
+    auto status = fs.get_status();
+    JsonValue root = JsonValue::object();
+    root.set("schema_version", JsonValue::string(kSchemaVersion));
+    root.set("category", JsonValue::string("filesystem_simulation"));
+    root.set("experiment", JsonValue::string("simple_filesystem"));
+    root.set("status", JsonValue::string("success"));
+    root.set("success", JsonValue::boolean(true));
+
+    JsonValue details = JsonValue::object();
+    details.set("total_blocks", JsonValue::integer(status.total_blocks));
+    details.set("block_size", JsonValue::integer(status.block_size));
+    details.set("used_blocks", JsonValue::integer(status.used_blocks));
+    details.set("free_blocks", JsonValue::integer(status.free_blocks));
+    details.set("file_count", JsonValue::integer(status.file_count));
+    details.set("directory_count", JsonValue::integer(status.directory_count));
+
+    std::vector<JsonValue> bitmap_arr;
+    bitmap_arr.reserve(status.block_bitmap.size());
+    for (bool bit : status.block_bitmap) {
+        bitmap_arr.push_back(JsonValue::boolean(bit));
+    }
+    details.set("block_bitmap", JsonValue::array(std::move(bitmap_arr)));
+
+    std::vector<JsonValue> inodes_arr;
+    std::vector<JsonValue> traces_arr;
+
+    for (const auto& in : fs.inodes()) {
+        JsonValue inode_obj = JsonValue::object();
+        inode_obj.set("inode_id", JsonValue::integer(in.inode_id));
+        inode_obj.set("name", JsonValue::string(in.name));
+        inode_obj.set("path", JsonValue::string(in.path));
+        inode_obj.set("is_directory", JsonValue::boolean(in.is_directory));
+        inode_obj.set("size_bytes", JsonValue::integer(static_cast<int64_t>(in.size_bytes)));
+
+        std::string strat_str = "Indexed";
+        if (in.strategy == filesystem::AllocationStrategy::Contiguous) {
+            strat_str = "Contiguous";
+        } else if (in.strategy == filesystem::AllocationStrategy::Linked) {
+            strat_str = "Linked";
+        }
+        inode_obj.set("strategy", JsonValue::string(strat_str));
+        inode_obj.set("start_block", JsonValue::integer(in.start_block));
+        inode_obj.set("index_block", JsonValue::integer(in.index_block));
+        inode_obj.set("block_count", JsonValue::integer(in.block_count));
+
+        std::vector<JsonValue> blocks_arr;
+        blocks_arr.reserve(in.allocated_blocks.size());
+        for (int b : in.allocated_blocks) {
+            blocks_arr.push_back(JsonValue::integer(b));
+        }
+        inode_obj.set("allocated_blocks", JsonValue::array(std::move(blocks_arr)));
+
+        inodes_arr.push_back(std::move(inode_obj));
+
+        if (!in.is_directory) {
+            JsonValue trace = JsonValue::object();
+            trace.set("name", JsonValue::string(in.name));
+            trace.set("path", JsonValue::string(in.path));
+            trace.set("strategy", JsonValue::string(strat_str));
+            trace.set("start_block", JsonValue::integer(in.start_block));
+            trace.set("index_block", JsonValue::integer(in.index_block));
+            trace.set("block_count", JsonValue::integer(in.block_count));
+            std::vector<JsonValue> trace_blocks;
+            for (int b : in.allocated_blocks) {
+                trace_blocks.push_back(JsonValue::integer(b));
+            }
+            trace.set("allocated_blocks", JsonValue::array(std::move(trace_blocks)));
+            traces_arr.push_back(std::move(trace));
+        }
+    }
+
+    details.set("inodes", JsonValue::array(std::move(inodes_arr)));
+    details.set("allocation_traces", JsonValue::array(std::move(traces_arr)));
+
+    std::vector<JsonValue> logs_arr;
+    for (const auto& log_line : operation_logs) {
+        logs_arr.push_back(JsonValue::string(log_line));
+    }
+    details.set("operation_logs", JsonValue::array(std::move(logs_arr)));
+
+    root.set("result", std::move(details));
+    root.set("error", JsonValue::null());
+    return root;
+}
+
 
 JsonValue to_json(const experiments::FifoExperimentResult& result) {
     JsonValue root = JsonValue::object();

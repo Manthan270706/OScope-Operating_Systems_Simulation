@@ -12,6 +12,8 @@
 #include "oscope/deadlock/coffman_conditions.hpp"
 #include "oscope/experiments/ipc_experiments.hpp"
 #include "oscope/experiments/process_lifecycle_experiment.hpp"
+#include "oscope/process_manager.hpp"
+#include "oscope/process_state.hpp"
 #include "oscope/filesystem/simple_fs.hpp"
 #include "oscope/memory/allocation_strategy.hpp"
 #include "oscope/memory/memory_comparison.hpp"
@@ -1956,9 +1958,16 @@ void run_demo_address_translation(std::ostream& out, OutputFormat format, std::v
     if (format == OutputFormat::Json) {
         if (json_accumulator) {
             json_accumulator->push_back(reporting::to_json(t1));
+            json_accumulator->push_back(reporting::to_json(t2));
             json_accumulator->push_back(reporting::to_json(dp_result));
+            json_accumulator->push_back(reporting::to_json(thrash_result));
         } else {
-            out << reporting::to_json(t1).serialize(true) << "\n";
+            std::vector<reporting::JsonValue> acc;
+            acc.push_back(reporting::to_json(t1));
+            acc.push_back(reporting::to_json(t2));
+            acc.push_back(reporting::to_json(dp_result));
+            acc.push_back(reporting::to_json(thrash_result));
+            out << reporting::JsonValue::array(std::move(acc)).serialize(true) << "\n";
         }
         return;
     }
@@ -1999,6 +2008,155 @@ void run_demo_address_translation(std::ostream& out, OutputFormat format, std::v
             << " (" << std::fixed << std::setprecision(1) << (pt.fault_rate * 100.0) << "% fault rate)\n";
     }
     out << "  Working Set Knee (Thrashing Threshold): " << thrash_result.thrashing_threshold_frames << " frames.\n";
+}
+
+void run_paging_operations(std::istream& in, std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    paging::AddressTranslator translator(4096);
+    std::vector<paging::TranslationResult> translations;
+    std::optional<paging::DemandPagingResult> demand_result;
+    std::optional<paging::ThrashingSimulationResult> thrashing_result;
+    std::vector<std::string> logs;
+
+    std::string line;
+    while (std::getline(in, line)) {
+        const auto start = line.find_first_not_of(" \t\r\n");
+        if (start == std::string::npos) continue;
+        const auto end = line.find_last_not_of(" \t\r\n");
+        std::string cmd_line = line.substr(start, end - start + 1);
+        if (cmd_line.empty() || cmd_line[0] == '#') continue;
+
+        std::istringstream iss(cmd_line);
+        std::string op;
+        iss >> op;
+
+        if (op == "pagesize") {
+            uint64_t ps = 4096;
+            iss >> ps;
+            if (translator.set_page_size(ps)) {
+                logs.push_back("Set page size to " + std::to_string(ps) + " bytes.");
+            } else {
+                logs.push_back("Failed to set page size to " + std::to_string(ps) + " (must be power of 2).");
+            }
+        } else if (op == "map") {
+            uint64_t page = 0;
+            int frame = 0;
+            std::string dirty_str;
+            iss >> page >> frame >> dirty_str;
+            bool dirty = (dirty_str == "dirty" || dirty_str == "1" || dirty_str == "true");
+            translator.map_page(page, frame, dirty);
+            logs.push_back("Mapped page " + std::to_string(page) + " to frame " + std::to_string(frame) + (dirty ? " [dirty]" : ""));
+        } else if (op == "unmap") {
+            uint64_t page = 0;
+            iss >> page;
+            if (translator.unmap_page(page)) {
+                logs.push_back("Unmapped page " + std::to_string(page));
+            } else {
+                logs.push_back("Unmap failed: page " + std::to_string(page) + " not in table.");
+            }
+        } else if (op == "clear") {
+            translator.clear_page_table();
+            logs.push_back("Cleared page table.");
+        } else if (op == "translate") {
+            uint64_t va = 0;
+            iss >> va;
+            auto tr = translator.translate(va);
+            translations.push_back(tr);
+            if (!tr.page_fault) {
+                logs.push_back("Translate VA " + std::to_string(va) + " -> Frame " + std::to_string(tr.frame_number) + ", PA " + std::to_string(tr.physical_address));
+            } else {
+                logs.push_back("Translate VA " + std::to_string(va) + " -> PAGE FAULT (Page " + std::to_string(tr.page_number) + ")");
+            }
+        } else if (op == "demand") {
+            int frames = 3;
+            iss >> frames;
+            std::vector<uint64_t> vas;
+            uint64_t addr = 0;
+            while (iss >> addr) {
+                vas.push_back(addr);
+            }
+            if (frames > 0 && !vas.empty()) {
+                demand_result = paging::AddressTranslator::simulate_demand_paging(translator.page_size(), frames, vas);
+                logs.push_back("Simulated demand paging: " + std::to_string(vas.size()) + " accesses across " + std::to_string(frames) + " frames. Fault rate: " + std::to_string(demand_result->fault_rate * 100.0) + "%");
+            }
+        } else if (op == "thrash") {
+            int min_f = 1, max_f = 4;
+            iss >> min_f >> max_f;
+            std::vector<int> refs;
+            int r = 0;
+            while (iss >> r) {
+                refs.push_back(r);
+            }
+            if (!refs.empty()) {
+                thrashing_result = paging::AddressTranslator::simulate_thrashing(refs, min_f, max_f);
+                logs.push_back("Simulated thrashing: threshold " + std::to_string(thrashing_result->thrashing_threshold_frames) + " frames.");
+            }
+        }
+    }
+
+    if (format == OutputFormat::Json) {
+        std::vector<reporting::JsonValue> acc;
+        for (const auto& tr : translations) {
+            acc.push_back(reporting::to_json(tr));
+        }
+        if (demand_result) {
+            acc.push_back(reporting::to_json(*demand_result));
+        }
+        if (thrashing_result) {
+            acc.push_back(reporting::to_json(*thrashing_result));
+        }
+
+        reporting::JsonValue overview = reporting::JsonValue::object();
+        overview.set("schema_version", reporting::JsonValue::string("1.0.0"));
+        overview.set("category", reporting::JsonValue::string("paging_virtual_memory"));
+        overview.set("experiment", reporting::JsonValue::string("paging_overview"));
+        overview.set("status", reporting::JsonValue::string("success"));
+        overview.set("success", reporting::JsonValue::boolean(true));
+
+        reporting::JsonValue res = reporting::JsonValue::object();
+        res.set("page_size", reporting::JsonValue::unsigned_integer(translator.page_size()));
+        
+        std::vector<reporting::JsonValue> pt_entries;
+        for (const auto& [page, entry] : translator.page_table()) {
+            reporting::JsonValue e = reporting::JsonValue::object();
+            e.set("page_number", reporting::JsonValue::unsigned_integer(page));
+            e.set("frame_number", reporting::JsonValue::integer(entry.frame_number));
+            e.set("valid", reporting::JsonValue::boolean(entry.valid));
+            e.set("dirty", reporting::JsonValue::boolean(entry.dirty));
+            e.set("referenced", reporting::JsonValue::boolean(entry.referenced));
+            pt_entries.push_back(std::move(e));
+        }
+        res.set("page_table", reporting::JsonValue::array(std::move(pt_entries)));
+
+        std::vector<reporting::JsonValue> log_vals;
+        for (const auto& l : logs) {
+            log_vals.push_back(reporting::JsonValue::string(l));
+        }
+        res.set("logs", reporting::JsonValue::array(std::move(log_vals)));
+
+        overview.set("result", std::move(res));
+        overview.set("error", reporting::JsonValue::null());
+
+        if (json_accumulator) {
+            json_accumulator->push_back(overview);
+            for (auto& item : acc) {
+                json_accumulator->push_back(std::move(item));
+            }
+        } else {
+            std::vector<reporting::JsonValue> all_out;
+            all_out.push_back(std::move(overview));
+            for (auto& item : acc) {
+                all_out.push_back(std::move(item));
+            }
+            out << reporting::JsonValue::array(std::move(all_out)).serialize(true) << "\n";
+        }
+        return;
+    }
+
+    out << "=== Address Translation & Paging Operations ===\n";
+    out << "Page Size: " << translator.page_size() << " bytes\n";
+    for (const auto& l : logs) {
+        out << "  " << l << "\n";
+    }
 }
 
 void run_demo_petersons_algorithm(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
@@ -2118,6 +2276,22 @@ void run_demo_host_monitoring(std::ostream& out, OutputFormat format, std::vecto
                 << " | Sectors Written: " << d.sectors_written << "\n";
         }
     }
+
+    if (snap.system.valid) {
+        out << "\n5. Host System & Filesystem Overview:\n";
+        out << "  Uptime:           " << std::fixed << std::setprecision(1) << snap.system.uptime_seconds << " seconds\n";
+        out << "  Load Averages:    " << std::setprecision(2) << snap.system.load_1min << " (1m), "
+            << snap.system.load_5min << " (5m), " << snap.system.load_15min << " (15m)\n";
+        out << "  Process Count:    " << snap.system.total_processes << " total ("
+            << snap.system.running_processes << " runnable)\n";
+        if (snap.system.disk_total_bytes > 0) {
+            out << "  Root Mount:       " << snap.system.root_mount << "\n";
+            out << "  Disk Capacity:    " << (snap.system.disk_total_bytes / (1024 * 1024)) << " MB\n";
+            out << "  Disk Used:        " << (snap.system.disk_used_bytes / (1024 * 1024)) << " MB ("
+                << std::setprecision(1) << snap.system.disk_used_percent << " %)\n";
+            out << "  Disk Available:   " << (snap.system.disk_available_bytes / (1024 * 1024)) << " MB\n";
+        }
+    }
 }
 
 void run_demo_filesystem(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
@@ -2138,9 +2312,9 @@ void run_demo_filesystem(std::ostream& out, OutputFormat format, std::vector<rep
 
     if (format == OutputFormat::Json) {
         if (json_accumulator) {
-            json_accumulator->push_back(reporting::to_json(status));
+            json_accumulator->push_back(reporting::to_json(fs));
         } else {
-            out << reporting::to_json(status).serialize(true) << "\n";
+            out << reporting::to_json(fs).serialize(true) << "\n";
         }
         return;
     }
@@ -2187,6 +2361,207 @@ void run_demo_filesystem(std::ostream& out, OutputFormat format, std::vector<rep
     }
     out << "\n";
 }
+
+void run_demo_filesystem_fragmentation(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    filesystem::SimpleFilesystem fs(6, 512);
+    std::vector<std::string> logs;
+
+    logs.push_back("Formatted disk: 6 blocks of 512 bytes.");
+    fs.create_file("/f1", 512, filesystem::AllocationStrategy::Contiguous);
+    logs.push_back("Created /f1 (512 bytes, Contiguous) -> allocated block 0");
+    fs.create_file("/f2", 512, filesystem::AllocationStrategy::Contiguous);
+    logs.push_back("Created /f2 (512 bytes, Contiguous) -> allocated block 1");
+    fs.create_file("/f3", 512, filesystem::AllocationStrategy::Contiguous);
+    logs.push_back("Created /f3 (512 bytes, Contiguous) -> allocated block 2");
+    fs.create_file("/f4", 512, filesystem::AllocationStrategy::Contiguous);
+    logs.push_back("Created /f4 (512 bytes, Contiguous) -> allocated block 3");
+
+    // Delete /f1 and /f3 to create holes (external fragmentation)
+    fs.delete_file("/f1");
+    logs.push_back("Deleted /f1 -> block 0 freed");
+    fs.delete_file("/f3");
+    logs.push_back("Deleted /f3 -> block 2 freed. Free blocks: 0, 2, 4, 5 (Total free: 4 blocks)");
+
+    // Try contiguous allocation of 1500 bytes (3 blocks). Max contiguous run is only 2 blocks (4, 5).
+    bool contig_ok = fs.create_file("/big_contiguous", 1500, filesystem::AllocationStrategy::Contiguous);
+    if (!contig_ok) {
+        logs.push_back("Attempted contiguous allocation of /big_contiguous (1500 B / 3 blocks): FAILED (external fragmentation - no 3 contiguous blocks available)");
+    } else {
+        logs.push_back("Contiguous allocation succeeded unexpectedly.");
+    }
+
+    // Try linked allocation of 1500 bytes (3 blocks) - should succeed using blocks 0, 2, 4
+    bool linked_ok = fs.create_file("/big_linked", 1500, filesystem::AllocationStrategy::Linked);
+    if (linked_ok) {
+        auto meta = fs.get_metadata("/big_linked");
+        std::string blist;
+        if (meta) {
+            for (int b : meta->allocated_blocks) blist += std::to_string(b) + " ";
+        }
+        logs.push_back("Attempted linked allocation of /big_linked (1500 B / 3 blocks): SUCCEEDED -> allocated non-contiguous blocks: " + blist);
+    }
+
+    if (format == OutputFormat::Json) {
+        if (json_accumulator) {
+            json_accumulator->push_back(reporting::to_json(fs, logs));
+        } else {
+            out << reporting::to_json(fs, logs).serialize(true) << "\n";
+        }
+        return;
+    }
+
+    out << "\n=== External Fragmentation Demonstration ===\n";
+    for (const auto& l : logs) {
+        out << "  * " << l << "\n";
+    }
+    auto status = fs.get_status();
+    out << "\nFinal Disk Bitmap (0 = Free, 1 = Allocated):\n  ";
+    for (size_t i = 0; i < status.block_bitmap.size(); ++i) {
+        out << (status.block_bitmap[i] ? "1" : "0") << " ";
+    }
+    out << "\n";
+}
+
+void run_demo_filesystem_capacity(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    filesystem::SimpleFilesystem fs(8, 512);
+    std::vector<std::string> logs;
+    logs.push_back("Formatted disk: 8 blocks of 512 bytes (4096 bytes total capacity).");
+
+    fs.create_file("/file_a.dat", 2048, filesystem::AllocationStrategy::Contiguous);
+    logs.push_back("Created /file_a.dat (2048 bytes / 4 blocks, Contiguous) -> blocks 0-3");
+
+    fs.create_file("/file_b.dat", 1500, filesystem::AllocationStrategy::Linked);
+    logs.push_back("Created /file_b.dat (1500 bytes / 3 blocks, Linked) -> blocks 4-6 (Total 7 blocks used, 1 free)");
+
+    // Try to allocate 1000 bytes (2 blocks) with only 1 block free -> should fail
+    bool fail_ok = fs.create_file("/overflow.dat", 1000, filesystem::AllocationStrategy::Linked);
+    if (!fail_ok) {
+        logs.push_back("Attempted allocation of /overflow.dat (1000 B / 2 blocks): FAILED (capacity exhaustion: 2 needed, 1 free)");
+    }
+
+    // Delete /file_a.dat, freeing 4 blocks
+    fs.delete_file("/file_a.dat");
+    logs.push_back("Deleted /file_a.dat -> 4 blocks freed (Now 5 blocks free)");
+
+    // Retry allocation
+    bool retry_ok = fs.create_file("/overflow.dat", 1000, filesystem::AllocationStrategy::Linked);
+    if (retry_ok) {
+        logs.push_back("Retried allocation of /overflow.dat: SUCCEEDED -> allocated 2 blocks");
+    }
+
+    if (format == OutputFormat::Json) {
+        if (json_accumulator) {
+            json_accumulator->push_back(reporting::to_json(fs, logs));
+        } else {
+            out << reporting::to_json(fs, logs).serialize(true) << "\n";
+        }
+        return;
+    }
+
+    out << "\n=== Disk Capacity Exhaustion Demonstration ===\n";
+    for (const auto& l : logs) {
+        out << "  * " << l << "\n";
+    }
+}
+
+void run_filesystem_operations(std::istream& in, std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    int total_blocks = 32;
+    int block_size = 512;
+    filesystem::SimpleFilesystem fs(total_blocks, block_size);
+    std::vector<std::string> logs;
+
+    std::string line;
+    while (std::getline(in, line)) {
+        // Trim whitespace
+        const auto start = line.find_first_not_of(" \t\r\n");
+        if (start == std::string::npos) continue;
+        const auto end = line.find_last_not_of(" \t\r\n");
+        std::string cmd_line = line.substr(start, end - start + 1);
+        if (cmd_line.empty() || cmd_line[0] == '#') continue; // comment
+
+        std::istringstream iss(cmd_line);
+        std::string op;
+        iss >> op;
+
+        if (op == "config") {
+            int tb = 32, bs = 512;
+            iss >> tb >> bs;
+            if (tb > 0 && bs > 0) {
+                total_blocks = tb;
+                block_size = bs;
+                fs = filesystem::SimpleFilesystem(total_blocks, block_size);
+                logs.push_back("Configured filesystem: " + std::to_string(total_blocks) + " blocks of " + std::to_string(block_size) + " bytes.");
+            }
+        } else if (op == "format") {
+            fs.format();
+            logs.push_back("Formatted filesystem.");
+        } else if (op == "mkdir") {
+            std::string path;
+            iss >> path;
+            if (fs.create_directory(path)) {
+                logs.push_back("mkdir " + path + ": SUCCESS");
+            } else {
+                logs.push_back("mkdir " + path + ": FAILED (parent does not exist or target already exists)");
+            }
+        } else if (op == "create") {
+            std::string path;
+            uint64_t size_bytes = 512;
+            std::string strat_str = "indexed";
+            iss >> path >> size_bytes >> strat_str;
+
+            filesystem::AllocationStrategy strat = filesystem::AllocationStrategy::Indexed;
+            if (strat_str == "contiguous") strat = filesystem::AllocationStrategy::Contiguous;
+            else if (strat_str == "linked") strat = filesystem::AllocationStrategy::Linked;
+
+            if (fs.create_file(path, size_bytes, strat)) {
+                auto meta = fs.get_metadata(path);
+                std::string block_info = "(Blocks: ";
+                if (meta) {
+                    for (int b : meta->allocated_blocks) block_info += std::to_string(b) + " ";
+                    if (meta->index_block >= 0) block_info += "[idx " + std::to_string(meta->index_block) + "] ";
+                }
+                block_info += ")";
+                logs.push_back("create " + path + " (" + std::to_string(size_bytes) + " B, " + strat_str + "): SUCCESS " + block_info);
+            } else {
+                logs.push_back("create " + path + " (" + std::to_string(size_bytes) + " B, " + strat_str + "): FAILED (allocation failure or parent dir missing)");
+            }
+        } else if (op == "delete") {
+            std::string path;
+            iss >> path;
+            if (fs.delete_file(path)) {
+                logs.push_back("delete " + path + ": SUCCESS");
+            } else {
+                logs.push_back("delete " + path + ": FAILED (file not found or is directory)");
+            }
+        } else if (op == "rmdir") {
+            std::string path;
+            iss >> path;
+            if (fs.remove_directory(path)) {
+                logs.push_back("rmdir " + path + ": SUCCESS");
+            } else {
+                logs.push_back("rmdir " + path + ": FAILED (directory not empty, not found, or root)");
+            }
+        }
+    }
+
+    if (format == OutputFormat::Json) {
+        if (json_accumulator) {
+            json_accumulator->push_back(reporting::to_json(fs, logs));
+        } else {
+            out << reporting::to_json(fs, logs).serialize(true) << "\n";
+        }
+        return;
+    }
+
+    out << "\n=== Filesystem Workload Execution ===\n";
+    for (const auto& l : logs) {
+        out << "  " << l << "\n";
+    }
+    auto status = fs.get_status();
+    out << "\nFilesystem Status: " << status.used_blocks << "/" << status.total_blocks << " blocks used, "
+        << status.file_count << " files, " << status.directory_count << " directories.\n";
+}
+
 
 void run_demo_sync(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
     if (format == OutputFormat::Json) {
@@ -2342,6 +2717,177 @@ void run_demo_disk(std::ostream& out, OutputFormat format, std::vector<reporting
     display_disk_comparison_table(out, comp_result);
 }
 
+void run_process_operations(std::istream& in, std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    ProcessManager pm;
+    struct ProcessTransitionRecord {
+        int pid{0};
+        std::string from_state;
+        std::string requested_state;
+        bool success{false};
+        std::string to_state;
+        std::string message;
+    };
+    std::vector<ProcessTransitionRecord> transitions;
+    std::vector<std::string> logs;
+
+    std::string line;
+    while (std::getline(in, line)) {
+        const auto start = line.find_first_not_of(" \t\r\n");
+        if (start == std::string::npos) continue;
+        const auto end = line.find_last_not_of(" \t\r\n");
+        std::string cmd_line = line.substr(start, end - start + 1);
+        if (cmd_line.empty() || cmd_line[0] == '#') continue;
+
+        std::istringstream iss(cmd_line);
+        std::string op;
+        iss >> op;
+
+        if (op == "create" || op == "register") {
+            int pid = 1, arrival = 0, burst = 5, priority = 1;
+            iss >> pid >> arrival >> burst >> priority;
+            Process p{pid, arrival, burst, priority};
+            bool ok = pm.register_process(p);
+            if (ok) {
+                logs.push_back("Created process PID " + std::to_string(pid) + " [Initial state: New, Burst: " + std::to_string(burst) + "]");
+                transitions.push_back({pid, "None", "New", true, "New", "Process registered in state New"});
+            } else {
+                logs.push_back("Failed to create process PID " + std::to_string(pid) + " (duplicate PID or invalid burst/arrival)");
+                transitions.push_back({pid, "None", "New", false, "None", "Process registration rejected"});
+            }
+        } else if (op == "transition" || op == "step") {
+            int pid = 1;
+            std::string state_str;
+            iss >> pid >> state_str;
+            auto target = process_state_from_string(state_str);
+            if (!target.has_value()) {
+                logs.push_back("Invalid target state: '" + state_str + "'");
+                transitions.push_back({pid, "Unknown", state_str, false, "Unknown", "Unknown target state name"});
+                continue;
+            }
+
+            auto curr_opt = pm.get_state(pid);
+            if (!curr_opt.has_value()) {
+                logs.push_back("Transition failed: PID " + std::to_string(pid) + " not registered.");
+                transitions.push_back({pid, "Unknown", to_string(*target), false, "Unknown", "PID not registered"});
+                continue;
+            }
+
+            std::string from_name = to_string(*curr_opt);
+            std::string target_name = to_string(*target);
+            bool ok = pm.transition_to(pid, *target);
+            auto new_state = pm.get_state(pid).value();
+            std::string to_name = to_string(new_state);
+
+            if (ok) {
+                std::string msg = "Transition " + from_name + " -> " + target_name + " succeeded";
+                logs.push_back("PID " + std::to_string(pid) + ": " + from_name + " -> " + target_name + " [SUCCESS]");
+                transitions.push_back({pid, from_name, target_name, true, to_name, msg});
+            } else {
+                std::string reason = "Illegal lifecycle transition: " + from_name + " cannot transition directly to " + target_name;
+                logs.push_back("PID " + std::to_string(pid) + ": " + from_name + " -> " + target_name + " [REJECTED: " + reason + "]");
+                transitions.push_back({pid, from_name, target_name, false, to_name, reason});
+            }
+        } else if (op == "clear") {
+            pm.clear();
+            logs.push_back("Cleared all registered processes.");
+        }
+    }
+
+    if (format == OutputFormat::Json) {
+        reporting::JsonValue root = reporting::JsonValue::object();
+        root.set("schema_version", reporting::JsonValue::string("1.0.0"));
+        root.set("category", reporting::JsonValue::string("process_lifecycle"));
+        root.set("experiment", reporting::JsonValue::string("process_state_machine"));
+        root.set("status", reporting::JsonValue::string("success"));
+        root.set("success", reporting::JsonValue::boolean(true));
+
+        reporting::JsonValue result = reporting::JsonValue::object();
+        result.set("total_processes", reporting::JsonValue::integer(static_cast<int>(pm.process_count())));
+
+        std::vector<reporting::JsonValue> procs;
+        for (int pid = 1; pid <= 100; ++pid) {
+            auto p_opt = pm.get_process(pid);
+            if (p_opt.has_value()) {
+                auto s_opt = pm.get_state(pid);
+                reporting::JsonValue p = reporting::JsonValue::object();
+                p.set("pid", reporting::JsonValue::integer(pid));
+                p.set("arrival_time", reporting::JsonValue::integer(p_opt->arrival_time));
+                p.set("burst_time", reporting::JsonValue::integer(p_opt->burst_time));
+                p.set("priority", reporting::JsonValue::integer(p_opt->priority));
+                p.set("state", reporting::JsonValue::string(s_opt.has_value() ? to_string(*s_opt) : "Unknown"));
+                procs.push_back(std::move(p));
+            }
+        }
+        result.set("processes", reporting::JsonValue::array(std::move(procs)));
+
+        std::vector<reporting::JsonValue> trans_arr;
+        for (const auto& tr : transitions) {
+            reporting::JsonValue t = reporting::JsonValue::object();
+            t.set("pid", reporting::JsonValue::integer(tr.pid));
+            t.set("from_state", reporting::JsonValue::string(tr.from_state));
+            t.set("requested_state", reporting::JsonValue::string(tr.requested_state));
+            t.set("success", reporting::JsonValue::boolean(tr.success));
+            t.set("to_state", reporting::JsonValue::string(tr.to_state));
+            t.set("message", reporting::JsonValue::string(tr.message));
+            trans_arr.push_back(std::move(t));
+        }
+        result.set("transitions", reporting::JsonValue::array(std::move(trans_arr)));
+
+        std::vector<reporting::JsonValue> log_vals;
+        for (const auto& l : logs) {
+            log_vals.push_back(reporting::JsonValue::string(l));
+        }
+        result.set("logs", reporting::JsonValue::array(std::move(log_vals)));
+
+        root.set("result", std::move(result));
+        root.set("error", reporting::JsonValue::null());
+
+        if (json_accumulator) {
+            json_accumulator->push_back(root);
+        } else {
+            out << root.serialize(true) << "\n";
+        }
+        return;
+    }
+
+    out << "\n=== Process Lifecycle State Machine Simulation ===\n";
+    out << "Registered Processes: " << pm.process_count() << "\n\n";
+    for (const auto& tr : transitions) {
+        out << "PID " << tr.pid << " | " << tr.from_state << " -> " << tr.requested_state
+            << " | " << (tr.success ? "SUCCESS" : "REJECTED")
+            << " | Resulting State: " << tr.to_state << "\n";
+        if (!tr.success) {
+            out << "  Note: " << tr.message << "\n";
+        }
+    }
+}
+
+void run_demo_process_state_machine(std::ostream& out, OutputFormat format, std::vector<reporting::JsonValue>* json_accumulator) {
+    std::string demo_script =
+        "create 1 0 5 1\n"
+        "transition 1 Ready\n"
+        "transition 1 Running\n"
+        "transition 1 Waiting\n"
+        "transition 1 Ready\n"
+        "transition 1 Running\n"
+        "transition 1 Terminated\n"
+        "create 2 1 4 2\n"
+        "transition 2 Ready\n"
+        "transition 2 Running\n"
+        "transition 2 Ready\n"
+        "transition 2 Running\n"
+        "transition 2 Terminated\n"
+        "create 3 2 6 1\n"
+        "transition 3 Running\n"
+        "transition 3 Terminated\n"
+        "transition 3 Ready\n"
+        "transition 3 Running\n"
+        "transition 3 Terminated\n";
+
+    std::istringstream iss(demo_script);
+    run_process_operations(iss, out, format, json_accumulator);
+}
+
 void run_all_demos(std::ostream& out, OutputFormat format) {
     std::vector<reporting::JsonValue> acc;
     auto* acc_ptr = (format == OutputFormat::Json) ? &acc : nullptr;
@@ -2353,6 +2899,7 @@ void run_all_demos(std::ostream& out, OutputFormat format) {
     run_demo_filesystem(out, format, acc_ptr);
     run_demo_ipc_extensions(out, format, acc_ptr);
     run_demo_process_lifecycle(out, format, acc_ptr);
+    run_demo_process_state_machine(out, format, acc_ptr);
     run_demo_disk(out, format, acc_ptr);
 
     if (format == OutputFormat::Json) {

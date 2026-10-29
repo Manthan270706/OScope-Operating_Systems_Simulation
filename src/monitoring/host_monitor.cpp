@@ -6,6 +6,9 @@
 #include <iomanip>
 #include <sstream>
 #include <unistd.h>
+#if !defined(_WIN32)
+#include <sys/statvfs.h>
+#endif
 
 namespace oscope::monitoring {
 
@@ -199,6 +202,63 @@ std::vector<HostDiskObservation> HostMonitor::read_disk_observations(const std::
     return observations;
 }
 
+HostSystemObservation HostMonitor::read_system_observation(const std::string& root_mount,
+                                                          const std::string& proc_uptime_path,
+                                                          const std::string& proc_loadavg_path) {
+    HostSystemObservation obs;
+    obs.root_mount = root_mount;
+
+    // 1. /proc/uptime
+    std::ifstream up_file(proc_uptime_path);
+    if (up_file.is_open()) {
+        double up = 0.0, idle = 0.0;
+        if (up_file >> up >> idle) {
+            obs.uptime_seconds = up;
+            obs.valid = true;
+        }
+    }
+
+    // 2. /proc/loadavg
+    std::ifstream load_file(proc_loadavg_path);
+    if (load_file.is_open()) {
+        double l1 = 0.0, l5 = 0.0, l15 = 0.0;
+        std::string proc_str;
+        if (load_file >> l1 >> l5 >> l15 >> proc_str) {
+            obs.load_1min = l1;
+            obs.load_5min = l5;
+            obs.load_15min = l15;
+            size_t slash = proc_str.find('/');
+            if (slash != std::string::npos) {
+                try {
+                    obs.running_processes = std::stoi(proc_str.substr(0, slash));
+                    obs.total_processes = std::stoi(proc_str.substr(slash + 1));
+                } catch (...) {}
+            }
+            obs.valid = true;
+        }
+    }
+
+    // 3. Filesystem capacity via statvfs
+#if !defined(_WIN32)
+    struct statvfs vfs{};
+    if (::statvfs(root_mount.c_str(), &vfs) == 0) {
+        uint64_t total = static_cast<uint64_t>(vfs.f_blocks) * static_cast<uint64_t>(vfs.f_frsize);
+        uint64_t free_b = static_cast<uint64_t>(vfs.f_bfree) * static_cast<uint64_t>(vfs.f_frsize);
+        uint64_t avail = static_cast<uint64_t>(vfs.f_bavail) * static_cast<uint64_t>(vfs.f_frsize);
+        uint64_t used = (total >= free_b) ? (total - free_b) : 0;
+        obs.disk_total_bytes = total;
+        obs.disk_used_bytes = used;
+        obs.disk_available_bytes = avail;
+        if (total > 0) {
+            obs.disk_used_percent = (static_cast<double>(used) / static_cast<double>(total)) * 100.0;
+        }
+        obs.valid = true;
+    }
+#endif
+
+    return obs;
+}
+
 HostMonitoringSnapshot HostMonitor::take_snapshot() {
     HostMonitoringSnapshot snap;
     snap.source = "real_linux_host";
@@ -208,8 +268,9 @@ HostMonitoringSnapshot HostMonitor::take_snapshot() {
     snap.memory = read_memory_observation();
     snap.self_process = read_process_observation(0);
     snap.disks = read_disk_observations();
+    snap.system = read_system_observation();
 
-    snap.success = snap.cpu.valid || snap.memory.valid || snap.self_process.valid;
+    snap.success = snap.cpu.valid || snap.memory.valid || snap.self_process.valid || snap.system.valid;
     if (!snap.success) {
         snap.error_message = "Failed to access host /proc monitoring interfaces.";
     }

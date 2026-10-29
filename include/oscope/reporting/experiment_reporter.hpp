@@ -81,10 +81,12 @@ JsonValue to_json(const disk::DiskComparisonResult& result);
 
 JsonValue to_json(const paging::TranslationResult& result);
 JsonValue to_json(const paging::DemandPagingResult& result);
+JsonValue to_json(const paging::ThrashingSimulationResult& result);
 JsonValue to_json(const synchronization::PetersonSimulationResult& result);
 JsonValue to_json(const deadlock::CoffmanConditionReport& result);
 JsonValue to_json(const monitoring::HostMonitoringSnapshot& result);
 JsonValue to_json(const filesystem::FilesystemStatus& result);
+JsonValue to_json(const filesystem::SimpleFilesystem& fs, const std::vector<std::string>& operation_logs = {});
 JsonValue to_json(const experiments::FifoExperimentResult& result);
 JsonValue to_json(const experiments::SharedMemoryExperimentResult& result);
 JsonValue to_json(const experiments::MessageQueueExperimentResult& result);
