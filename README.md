@@ -91,3 +91,10 @@ OScope Repository
 │       └── js/app.js      # State controller, form management & presets
 └── run_web.py             # One-click web application launcher
 ```
+
+---
+
+## Documentation & Viva Preparation
+
+* **Concepts & Viva Guide**: [docs/OS_CONCEPTS_GUIDE.md](docs/OS_CONCEPTS_GUIDE.md) — Comprehensive guide covering algorithms, mathematical formulas, Coffman conditions, Belady's Anomaly, address translation, and typical viva examination questions.
+
