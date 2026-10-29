@@ -1,0 +1,588 @@
+# OScope — Data Model and Result Schema
+
+## 1. Purpose
+
+This document defines the initial conceptual data model for workloads, events, metrics, and experiment results.
+
+## 2. Workload
+
+A workload is a deterministic description of an experiment's input.
+
+Examples:
+
+- process list;
+- page reference string;
+- memory requests;
+- disk request queue;
+- resource matrices.
+
+## 3. Event
+
+```text
+Event
+- event_id
+- type
+- simulation_time or relative_time
+- actor
+- payload
+```
+
+The timestamp field must identify whether it is simulated time or real elapsed time.
+
+## 4. Metrics
+
+```text
+Metric
+- name
+- value
+- unit
+- source
+- description
+```
+
+## 5. Experiment Metadata
+
+```text
+ExperimentMetadata
+- experiment_id
+- module
+- algorithm
+- mode
+- created_at
+- oscope_version
+- seed
+- environment
+```
+
+## 6. Result
+
+```text
+{
+  "schema_version": "1.0",
+  "experiment": {},
+  "workload": {},
+  "events": [],
+  "metrics": {},
+  "status": "success",
+  "errors": []
+}
+```
+
+## 7. Reproducibility Fields
+
+For deterministic simulations:
+
+- input;
+- configuration;
+- seed if applicable;
+- algorithm version.
+
+For Linux experiments:
+
+- kernel/environment information where available;
+- compiler/build version;
+- host resource context where relevant.
+
+## 8. Naming
+
+Names should be stable, machine-readable, and documented. Avoid using presentation-only labels as schema identifiers.
+
+## 9. Compatibility
+
+Schema changes shall prefer additive evolution. Breaking changes require a version change and ADR.
+
+---
+
+## 10. Linux/POSIX Experiments JSON Schema (v1.0.0)
+
+OScope provides structured, machine-readable JSON reporting for Linux/POSIX experiments via `oscope::reporting`.
+
+### 10.1 Schema Overview
+
+All experiment JSON outputs share a uniform top-level envelope:
+
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "linux_posix_experiment",
+  "experiment": "<experiment_name>",
+  "status": "success | failure",
+  "success": true,
+  "result": { ... },
+  "error": null
+}
+```
+
+- `schema_version`: Semantic schema version string (`"1.0.0"`).
+- `category`: Category identifier (`"linux_posix_experiment"`).
+- `experiment`: Name of experiment (`"process_creation"`, `"thread_creation"`, `"thread_synchronization"`, `"pipe_ipc"`).
+- `status`: High-level execution status string (`"success"` or `"failure"`).
+- `success`: Boolean flag indicating whether the experiment satisfied all validation checks.
+- `result`: Experiment-specific metrics and execution details.
+- `error`: `null` on success, or an object containing error information (`message`, `status_code`) on failure.
+
+### 10.2 Experiment Result Schemas & Examples
+
+#### Process Creation (`process_creation`)
+
+Result fields:
+- `parent_pid` (integer): PID of parent process.
+- `child_pid` (integer | null): PID of spawned child process, or null if fork failed.
+- `child_exited_normally` (boolean): Whether child terminated via normal exit.
+- `child_exit_code` (integer | null): Child exit code if exited normally, else null.
+- `child_termination_signal` (integer | null): Termination signal if killed by signal, else null.
+- `status_code` (string): Specific experiment status (`"success"`, `"fork_failed"`, `"wait_failed"`, `"abnormal_termination"`, `"unexpected_exit_code"`).
+- `message` (string): Descriptive status summary.
+
+Example Success:
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "linux_posix_experiment",
+  "experiment": "process_creation",
+  "status": "success",
+  "success": true,
+  "result": {
+    "parent_pid": 4998,
+    "child_pid": 4999,
+    "child_exited_normally": true,
+    "child_exit_code": 42,
+    "child_termination_signal": null,
+    "status_code": "success",
+    "message": "Child process exited normally with expected exit code 42."
+  },
+  "error": null
+}
+```
+
+#### Thread Creation (`thread_creation`)
+
+Result fields:
+- `requested_threads` (unsigned integer): Number of threads requested.
+- `started_threads` (unsigned integer): Number of worker threads successfully created.
+- `completed_threads` (unsigned integer): Number of worker threads joined after task completion.
+- `worker_results` (array of integers): Ordered computational outputs from each worker thread.
+
+Example Success:
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "linux_posix_experiment",
+  "experiment": "thread_creation",
+  "status": "success",
+  "success": true,
+  "result": {
+    "requested_threads": 4,
+    "started_threads": 4,
+    "completed_threads": 4,
+    "worker_results": [100, 200, 300, 400]
+  },
+  "error": null
+}
+```
+
+#### Thread Synchronization (`thread_synchronization`)
+
+Result fields:
+- `num_threads` (unsigned integer): Concurrent worker count.
+- `iterations_per_thread` (unsigned integer): Increments per thread.
+- `threads_completed` (unsigned integer): Successfully joined workers.
+- `expected_counter` (unsigned integer): Mathematical expected counter total.
+- `actual_counter` (unsigned integer): Shared counter value protected by mutex.
+- `counter_match` (boolean): `true` if actual matches expected, demonstrating no data race.
+
+Example Success:
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "linux_posix_experiment",
+  "experiment": "thread_synchronization",
+  "status": "success",
+  "success": true,
+  "result": {
+    "num_threads": 4,
+    "iterations_per_thread": 10000,
+    "threads_completed": 4,
+    "expected_counter": 40000,
+    "actual_counter": 40000,
+    "counter_match": true
+  },
+  "error": null
+}
+```
+
+#### Pipe-based IPC (`pipe_ipc`)
+
+Result fields:
+- `direction` (string): Unidirectional pipe flow (`"child_to_parent"`).
+- `parent_pid` (integer): Reader parent process PID.
+- `child_pid` (integer | null): Writer child process PID.
+- `child_exited_normally` (boolean): Child exit state.
+- `child_exit_code` (integer | null): Exit code from child.
+- `child_termination_signal` (integer | null): Signal if terminated abnormally.
+- `sent_message` (string): Message written by child into pipe.
+- `received_message` (string): Message read by parent from pipe.
+- `messages_match` (boolean): Integrity verification check.
+- `status_code` (string): Experiment status code (`"success"`, `"read_failed"`, `"write_failed"`, etc.).
+
+Example Success:
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "linux_posix_experiment",
+  "experiment": "pipe_ipc",
+  "status": "success",
+  "success": true,
+  "result": {
+    "direction": "child_to_parent",
+    "parent_pid": 4998,
+    "child_pid": 5008,
+    "child_exited_normally": true,
+    "child_exit_code": 0,
+    "child_termination_signal": null,
+    "sent_message": "Hello from OScope child process via POSIX pipe!",
+    "received_message": "Hello from OScope child process via POSIX pipe!",
+    "messages_match": true,
+    "status_code": "success"
+  },
+  "error": null
+}
+```
+
+### 10.3 CLI Usage and Output Contract
+
+1. **Default Mode (Human-Readable):**
+   ```bash
+   ./build/oscope
+   ```
+   Interactive menus, prompts, banners, and formatted tables are written to standard output.
+
+2. **JSON Output Mode:**
+   ```bash
+   ./build/oscope --json
+   # or
+   ./build/oscope -j
+   # or
+   ./build/oscope --format json
+   ```
+   **Output Contract:** Standard output emits a single valid JSON document containing an array of all experiment results executed during the session (e.g., `[ { ... }, { ... } ]`). When no experiments are run, an empty array `[]` is emitted. Interactive navigation menus, prompts, and input validation diagnostics are routed to standard error (`stderr`), ensuring standard output (`stdout`) remains strictly valid, machine-readable JSON suitable for piping directly to tools like `python3 -m json.tool` or `jq`.
+
+3. **Programmatic API:**
+   ```cpp
+   #include "oscope/reporting/experiment_reporter.hpp"
+
+   auto result = oscope::experiments::run_pipe_ipc_experiment();
+   std::string json_output = oscope::reporting::serialize_result(result, true);
+   ```
+
+---
+
+## 11. Deadlock Management JSON Schema (v1.0.0)
+
+OScope structures deadlock analysis and simulation results under `"category": "deadlock_management"`.
+
+### 11.1 Banker's Safety Result Schema (`"experiment": "bankers_safety"`)
+
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "deadlock_management",
+  "experiment": "bankers_safety",
+  "status": "success",
+  "success": true,
+  "result": {
+    "is_safe": true,
+    "num_processes": 5,
+    "num_resources": 3,
+    "safe_sequence": [1, 3, 0, 2, 4],
+    "blocked_processes": [],
+    "message": "System is in a safe state."
+  },
+  "error": null
+}
+```
+
+### 11.2 Resource Request Simulation Schema (`"experiment": "resource_request"`)
+
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "deadlock_management",
+  "experiment": "resource_request",
+  "status": "success",
+  "success": true,
+  "result": {
+    "process_id": 1,
+    "request": [1, 0, 2],
+    "granted": true,
+    "request_status": "Granted",
+    "is_safe": true,
+    "safe_sequence": [1, 3, 0, 2, 4],
+    "message": "Request granted. System transitions safely to new state."
+  },
+  "error": null
+}
+```
+
+### 11.3 Deadlock Detection Schema (`"experiment": "deadlock_detection"`)
+
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "deadlock_management",
+  "experiment": "deadlock_detection",
+  "status": "success",
+  "success": true,
+  "result": {
+    "is_deadlocked": false,
+    "num_processes": 5,
+    "num_resources": 3,
+    "deadlocked_processes": [],
+    "finish_order": [0, 1, 2, 3, 4],
+    "message": "No deadlock detected. All processes can successfully complete."
+  },
+  "error": null
+}
+```
+
+---
+
+## 12. Disk Scheduling JSON Schema (v1.0.0)
+
+OScope structures disk scheduling results under `"category": "disk_scheduling"`.
+
+### 12.1 Single Algorithm Result (`"experiment": "disk_scheduling"`)
+
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "disk_scheduling",
+  "experiment": "disk_scheduling",
+  "status": "success",
+  "success": true,
+  "result": {
+    "algorithm": "First-Come, First-Served (FCFS)",
+    "serviced_requests": [98, 183, 37, 122, 14, 124, 65, 67],
+    "head_path": [53, 98, 183, 37, 122, 14, 124, 65, 67],
+    "total_head_movement": 640,
+    "wraparound_movement": 0,
+    "average_head_movement": "80.000000",
+    "initial_head_position": 53,
+    "final_head_position": 67,
+    "message": "FCFS scheduling completed successfully."
+  },
+  "error": null
+}
+```
+
+### 12.2 Multi-Algorithm Comparison Result (`"experiment": "disk_comparison"`)
+
+```json
+{
+  "schema_version": "1.0.0",
+  "category": "disk_scheduling",
+  "experiment": "disk_comparison",
+  "status": "success",
+  "success": true,
+  "result": {
+    "num_algorithms": 6,
+    "initial_head_position": 53,
+    "cylinder_range": [0, 199],
+    "algorithms": [
+      {
+        "algorithm": "FCFS",
+        "total_head_movement": 640,
+        "average_head_movement": 80.0,
+        "final_head_position": 67
+      },
+      {
+        "algorithm": "SSTF",
+        "total_head_movement": 236,
+        "average_head_movement": 29.5,
+        "final_head_position": 183
+      },
+      {
+        "algorithm": "SCAN",
+        "total_head_movement": 345,
+        "average_head_movement": 43.125,
+        "final_head_position": 0
+      },
+      {
+        "algorithm": "C-SCAN",
+        "total_head_movement": 382,
+        "average_head_movement": 47.75,
+        "final_head_position": 37
+      },
+      {
+        "algorithm": "LOOK",
+        "total_head_movement": 208,
+        "average_head_movement": 26.0,
+        "final_head_position": 14
+      },
+      {
+        "algorithm": "C-LOOK",
+        "total_head_movement": 322,
+        "average_head_movement": 40.25,
+        "final_head_position": 37
+      }
+    ],
+    "message": "Disk scheduling comparison completed across 6 algorithms."
+  },
+  "error": null
+}
+```
+
+---
+
+## 13. Extended Module Schemas (v1.0.0)
+
+OScope extends structured JSON reporting across virtual memory, Peterson's algorithm, Coffman conditions, host monitoring, simple filesystem, and POSIX lifecycle/IPC experiments.
+
+### 13.1 Address Translation & Demand Paging Schema
+
+- **Category:** `paging_virtual_memory`
+- **Experiment:** `address_translation` or `demand_paging`
+- **Result Fields (address_translation):**
+  - `virtual_address` (uint32)
+  - `page_size` (uint32)
+  - `page_number` (uint32)
+  - `offset` (uint32)
+  - `frame_number` (uint32)
+  - `physical_address` (uint32)
+  - `valid` (boolean)
+  - `page_fault` (boolean)
+- **Result Fields (demand_paging):**
+  - `num_frames` (uint32)
+  - `page_size` (uint32)
+  - `total_accesses` (uint32)
+  - `page_faults` (uint32)
+  - `fault_rate` (number)
+  - `access_history` (array of objects detailing step, virtual_address, page_number, offset, frame_number, page_fault, and evicted_page)
+
+### 13.2 Peterson's Algorithm Simulation Schema
+
+- **Category:** `synchronization`
+- **Experiment:** `petersons_algorithm`
+- **Result Fields:**
+  - `mutual_exclusion_maintained` (boolean)
+  - `p0_cs_entries` (uint32)
+  - `p1_cs_entries` (uint32)
+  - `total_steps` (uint32)
+  - `trace` (array of objects detailing step_number, process_id, flag_p0, flag_p1, turn, action)
+  - `educational_notes` (string)
+
+### 13.3 Coffman Deadlock Conditions Schema
+
+- **Category:** `deadlock_management`
+- **Experiment:** `coffman_conditions`
+- **Result Fields:**
+  - `mutual_exclusion` (boolean)
+  - `hold_and_wait` (boolean)
+  - `no_preemption` (boolean)
+  - `circular_wait` (boolean)
+  - `deadlock_vulnerable` (boolean)
+  - `summary` (string)
+  - `condition_details` (array of strings)
+  - `prevention_recommendations` (array of strings)
+
+### 13.4 Linux Host Resource Monitoring Schema
+
+- **Category:** `linux_monitoring`
+- **Experiment:** `host_observation`
+- **Result Fields:**
+  - `source` (string: `"real_linux_host"`)
+  - `timestamp` (string)
+  - `cpu`: `total_usage_percent`, `user_percent`, `system_percent`, `idle_percent`
+  - `memory`: `total_ram_bytes`, `used_ram_bytes`, `available_ram_bytes`, `used_percent`
+  - `self_process`: `pid`, `comm`, `state`, `utime_ticks`, `stime_ticks`, `rss_bytes`, `vsize_bytes`
+  - `disk_devices` (array of device observations: `device_name`, `reads_completed`, `sectors_read`, `writes_completed`, `sectors_written`)
+
+### 13.5 Educational File System Simulation Schema
+
+- **Category:** `filesystem_simulation`
+- **Experiment:** `simple_filesystem`
+- **Result Fields:**
+  - `total_blocks` (uint32)
+  - `block_size_bytes` (uint32)
+  - `used_blocks` (uint32)
+  - `free_blocks` (uint32)
+  - `total_inodes` (uint32)
+  - `used_inodes` (uint32)
+  - `root_entries` (array of directory entries: `name`, `inode_number`, `is_directory`, `size_bytes`)
+  - `allocation_traces` (array of file allocation traces: `filename`, `strategy`, `allocated_blocks`, `start_block`, `block_count`, `index_block`)
+  - `free_block_bitmap` (array of booleans)
+
+### 13.6 POSIX FIFO & Shared Memory IPC Schemas
+
+- **Category:** `linux_posix_experiment`
+- **Experiment:** `fifo_ipc`
+  - `fifo_path` (string)
+  - `message_sent` (string)
+  - `message_received` (string)
+  - `data_matched` (boolean)
+  - `details` (string)
+- **Experiment:** `shared_memory_ipc`
+  - `shm_name` (string)
+  - `segment_size_bytes` (uint64)
+  - `payload_written` (string)
+  - `payload_read` (string)
+  - `data_matched` (boolean)
+  - `details` (string)
+
+### 13.7 Process Lifecycle (Zombie & Orphan) Schemas
+
+- **Category:** `linux_posix_experiment`
+- **Experiment:** `zombie_demonstration`
+  - `child_pid` (int64)
+  - `observed_zombie_state` (string, e.g. `"Z"`)
+  - `reaped_by_parent` (boolean)
+  - `exit_status` (int64)
+  - `details` (string)
+- **Experiment:** `orphan_demonstration`
+  - `child_pid` (int64)
+  - `initial_parent_pid` (int64)
+  - `adopted_parent_pid` (int64)
+  - `reparented_to_init_or_subreaper` (boolean)
+  - `details` (string)
+
+### 13.8 POSIX Semaphores & Producer-Consumer Synchronization Schemas
+
+- **Category:** `synchronization`
+- **Experiment:** `posix_semaphore`
+  - `num_threads` (uint64)
+  - `iterations_per_thread` (uint64)
+  - `threads_completed` (uint64)
+  - `expected_counter` (uint64)
+  - `actual_counter` (uint64)
+  - `counter_match` (boolean)
+  - `initial_value` (uint64)
+- **Experiment:** `producer_consumer`
+  - `buffer_capacity` (uint64)
+  - `total_items` (uint64)
+  - `num_producers` (uint64)
+  - `num_consumers` (uint64)
+  - `items_produced` (uint64)
+  - `items_consumed` (uint64)
+  - `items_preserved` (boolean)
+  - `max_buffer_occupancy_observed` (uint64)
+
+### 13.9 POSIX Message Queue Schema
+
+- **Category:** `linux_posix_experiment`
+- **Experiment:** `message_queue_ipc`
+  - `queue_name` (string)
+  - `messages_sent` (int64)
+  - `messages_received` (int64)
+  - `message_content` (string)
+  - `details` (string)
+
+### 13.10 Process Image Replacement (Exec*) Schema
+
+- **Category:** `linux_posix_experiment`
+- **Experiment:** `process_exec`
+  - `child_pid` (int64)
+  - `program_executed` (string)
+  - `image_replaced` (boolean)
+  - `captured_output` (string)
+  - `child_exit_code` (int64)
+  - `details` (string)

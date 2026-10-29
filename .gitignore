@@ -1,0 +1,56 @@
+# =========================
+# OScope Build Artifacts
+# =========================
+
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# =========================
+# C / C++ Build Artifacts
+# =========================
+
+*.o
+*.obj
+*.a
+*.so
+*.dll
+*.exe
+
+# =========================
+# Python
+# =========================
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# =========================
+# IDE / Editor
+# =========================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# OS / Temporary Files
+# =========================
+
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# =========================
+# OScope Generated Results
+# =========================
+
+results/generated/

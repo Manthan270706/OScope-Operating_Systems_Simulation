@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OScope — Operating Systems Simulation & Experimentation Laboratory</title>
+  <link rel="stylesheet" href="/static/css/main.css" />
+</head>
+<body>
+  <div id="app-container">
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <span class="brand-badge">LAB</span>
+          <span class="brand-title">OScope</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a class="nav-item active" data-route="overview">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span>
+          <span>Laboratory Overview</span>
+        </a>
+
+        <div class="nav-section-title">CPU & Process Core</div>
+        <a class="nav-item" data-route="scheduling">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg></span>
+          <span>CPU Scheduling</span>
+        </a>
+        <a class="nav-item" data-route="process-lifecycle">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9M12 12v3"/></svg></span>
+          <span>Process Lifecycle</span>
+        </a>
+        <a class="nav-item" data-route="linux-experiments">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></span>
+          <span>POSIX Concurrency & IPC</span>
+        </a>
+
+        <div class="nav-section-title">Memory Hierarchy</div>
+        <a class="nav-item" data-route="memory">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg></span>
+          <span>Dynamic Memory Allocation</span>
+        </a>
+        <a class="nav-item" data-route="paging">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 14h6M9 18h6"/></svg></span>
+          <span>Page Replacement</span>
+        </a>
+        <a class="nav-item" data-route="address-translation">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></span>
+          <span>Virtual Memory & MMU</span>
+        </a>
+
+        <div class="nav-section-title">Storage & I/O</div>
+        <a class="nav-item" data-route="disk">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/></svg></span>
+          <span>Disk Arm Scheduling</span>
+        </a>
+        <a class="nav-item" data-route="filesystem">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg></span>
+          <span>Simulated File System</span>
+        </a>
+
+        <div class="nav-section-title">System & Deadlocks</div>
+        <a class="nav-item" data-route="deadlock">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+          <span>Deadlock Management</span>
+        </a>
+        <a class="nav-item" data-route="host-monitor">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+          <span>Host Diagnostics</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="system-status">
+          <div class="status-indicator" id="status-indicator"></div>
+          <span id="status-text">Connecting to backend...</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Stage -->
+    <main id="main-content">
+      <header class="page-header">
+        <div class="page-title-box">
+          <h1 id="page-title">Laboratory Overview</h1>
+          <div class="page-subtitle" id="page-subtitle">Discover and launch Operating Systems experiments.</div>
+        </div>
+      </header>
+
+      <!-- 0. OVERVIEW LANDING VIEW -->
+      <section class="experiment-view active" id="view-overview">
+        <div style="max-width: 1200px;">
+          <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;">
+            Select an experimentation workbench to configure inputs, step through algorithmic execution, inspect visualizations, and benchmark comparative metrics against the authoritative C++ simulation core.
+          </p>
+
+          <div class="overview-grid">
+            <div class="module-card" data-target="scheduling">
+              <div>
+                <div class="module-category">CPU & Processes</div>
+                <div class="module-card-title">CPU Scheduling</div>
+                <div class="module-card-desc">Simulate FCFS, SJF, SRTF, Priority, Round Robin, and MLFQ with interactive SVG Gantt charts and waiting time benchmarks.</div>
+              </div>
+              <div class="module-card-footer">
+                <span>Gantt Chart & Metrics</span>
+                <span class="module-tag">Launch <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+              </div>
+            </div>
+
+            <div class="module-card" data-target="memory">
+              <div>
+                <div class="module-category">Memory Hierarchy</div>
+                <div class="module-card-title">Dynamic Memory Allocation</div>
+                <div class="module-card-desc">Investigate First Fit, Best Fit, and Worst Fit contiguous partition placement, coalescing, and external fragmentation.</div>
+              </div>
+              <div class="module-card-footer">
+                <span>Partition Map</span>
+                <span class="module-tag">Launch <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+              </div>
+            </div>
+
+            <div class="module-card" data-target="paging">
+              <div>
+                <div class="module-category">Memory Hierarchy</div>
+                <div class="module-card-title">Page Replacement</div>
+                <div class="module-card-desc">Step through FIFO, LRU, and Optimal algorithms across reference strings, frame matrices, and observe Belady's Anomaly.</div>
+              </div>
+              <div class="module-card-footer">
+                <span>Step-by-Step Stepper</span>
+                <span class="module-tag">Launch <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+              </div>
+            </div>
+
+            <div class="module-card" data-target="deadlock">
+              <div>
+                <div class="module-category">System & Deadlocks</div>
+                <div class="module-card-title">Deadlock Management</div>
+                <div class="module-card-desc">Dijkstra's Banker's Safety Algorithm, resource request evaluations, deadlock detection, and safe execution sequence generation.</div>
+              </div>
+              <div class="module-card-footer">
+                <span>RAG & Banker's</span>
+                <span class="module-tag">Launch <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+              </div>
+            </div>
+
+            <div class="module-card" data-target="disk">
+              <div>
+                <div class="module-category">Storage & I/O</div>
+                <div class="module-card-title">Disk Arm Scheduling</div>
+                <div class="module-card-desc">Analyze cylinder head movements under FCFS, SSTF, SCAN, C-SCAN, LOOK, and C-LOOK with trajectory visualizations.</div>
+              </div>
+              <div class="module-card-footer">
+                <span>Seek Trajectory</span>
+                <span class="module-tag">Launch <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+              </div>
+            </div>
+
+            <div class="module-card" data-target="address-translation">
+              <div>
+                <div class="module-category">Memory Hierarchy</div>
+                <div class="module-card-title">Virtual Memory & MMU</div>
+                <div class="module-card-desc">Inspect hardware address translation: binary offset splits, page table frame lookups, and demand paging simulations.</div>
+              </div>
+              <div class="module-card-footer">
+                <span>MMU Schematic</span>
+                <span class="module-tag">Launch <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+              </div>
+            </div>
+
+            <div class="module-card" data-target="filesystem">
+              <div>
+                <div class="module-category">Storage & I/O</div>
+                <div class="module-card-title">Simulated File System</div>
+                <div class="module-card-desc">Explore contiguous vs indexed block allocation, inode structures, block bitmaps, and external fragmentation effects.</div>
+              </div>
+              <div class="module-card-footer">
+                <span>Storage Bitmap</span>
+                <span class="module-tag">Launch <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+              </div>
+            </div>
+
+            <div class="module-card" data-target="process-lifecycle">
+              <div>
+                <div class="module-category">CPU & Processes</div>
+                <div class="module-card-title">Process Lifecycle Explorer</div>
+                <div class="module-card-desc">Track process states from New to Terminated, parent-child fork trees, zombie process reaping, and orphan adoption.</div>
+              </div>
+              <div class="module-card-footer">
+                <span>State Machine</span>
+                <span class="module-tag">Launch <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+              </div>
+            </div>
+
+            <div class="module-card" data-target="linux-experiments">
+              <div>
+                <div class="module-category">CPU & Processes</div>
+                <div class="module-card-title">POSIX Concurrency & IPC</div>
+                <div class="module-card-desc">Run real OS kernel synchronization: anonymous pipes, shared memory, message queues, POSIX semaphores, and Peterson's mutex.</div>
+              </div>
+              <div class="module-card-footer">
+                <span>Kernel Sandbox</span>
+                <span class="module-tag">Launch <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+              </div>
+            </div>
+
+            <div class="module-card" data-target="host-monitor">
+              <div>
+                <div class="module-category">System & Deadlocks</div>
+                <div class="module-card-title">Host Diagnostics</div>
+                <div class="module-card-desc">Live telemetry parsed directly from the host Linux kernel (/proc/stat, memory usage breakdown, and task process table).</div>
+              </div>
+              <div class="module-card-footer">
+                <span>Live Telemetry</span>
+                <span class="module-tag">Launch <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 1. CPU SCHEDULING VIEW -->
+      <section class="experiment-view" id="view-scheduling">
+        <div id="sched-alert" class="alert-banner"></div>
+        <div class="workbench-layout">
+          <!-- Config Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Experiment Parameters</span>
+            </div>
+            <div class="panel-body">
+              <div class="form-group">
+                <label class="form-label">Algorithm Preset</label>
+                <select id="sched-preset" class="form-select">
+                  <option value="standard">Standard Mixed Workload (4 Processes)</option>
+                  <option value="convoy">Convoy Effect Demo (Long P1 Arrival 0)</option>
+                  <option value="priority_demo">Priority Inversion & Aging Test</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Scheduling Algorithm</label>
+                <select id="sched-algo" class="form-select">
+                  <option value="FCFS">First-Come, First-Served (FCFS)</option>
+                  <option value="SJF">Shortest Job First (SJF - Non-Preemptive)</option>
+                  <option value="SRTF">Shortest Remaining Time First (SRTF)</option>
+                  <option value="Priority">Priority Scheduling (Non-Preemptive)</option>
+                  <option value="Round Robin">Round Robin (RR)</option>
+                  <option value="MLFQ">Multilevel Feedback Queue (MLFQ)</option>
+                  <option value="Compare All">Compare All Algorithms</option>
+                </select>
+              </div>
+
+              <div class="form-group" id="sched-quantum-group" style="display: none;">
+                <label class="form-label">Round Robin Quantum (q)</label>
+                <input type="number" id="sched-rr-quantum" class="form-input" value="4" min="1" max="100" />
+              </div>
+
+              <div id="sched-mlfq-group" style="display: none;">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Q0 Quantum</label>
+                    <input type="number" id="sched-mlfq-q0" class="form-input" value="4" min="1" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Q1 Quantum</label>
+                    <input type="number" id="sched-mlfq-q1" class="form-input" value="8" min="1" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Q2 Quantum</label>
+                    <input type="number" id="sched-mlfq-q2" class="form-input" value="16" min="1" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label class="form-label" style="margin: 0;">Process Arrival Queue</label>
+                  <button id="btn-sched-add" class="btn btn-secondary btn-sm"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Process</button>
+                </div>
+                <div class="data-table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>PID</th>
+                        <th>Arrival</th>
+                        <th>Burst</th>
+                        <th>Priority</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="sched-proc-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <button id="btn-sched-run" class="btn btn-primary" style="width: 100%; margin-top: 10px;"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Run Simulation</button>
+            </div>
+          </div>
+
+          <!-- Display Stage -->
+          <div class="stage-panel">
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Execution Timeline (Gantt Chart)</span>
+                <div class="canvas-legend">
+                  <div class="legend-item"><div class="legend-swatch" style="background: #38bdf8;"></div><span>P1</span></div>
+                  <div class="legend-item"><div class="legend-swatch" style="background: #a78bfa;"></div><span>P2</span></div>
+                  <div class="legend-item"><div class="legend-swatch" style="background: #34d399;"></div><span>P3</span></div>
+                  <div class="legend-item"><div class="legend-swatch" style="background: #334155;"></div><span>Idle</span></div>
+                </div>
+              </div>
+              <div id="sched-gantt-container" class="viz-svg-container">
+                <div class="viz-placeholder">Configure processes and click "Run Simulation" to render Gantt chart.</div>
+              </div>
+            </div>
+
+            <!-- Metrics Cards -->
+            <div class="metrics-row">
+              <div class="metric-card">
+                <div class="metric-label">Average Waiting Time</div>
+                <div class="metric-val" id="sched-val-wait">0.00 <span class="metric-unit">u</span></div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Average Turnaround</div>
+                <div class="metric-val" id="sched-val-tat">0.00 <span class="metric-unit">u</span></div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Average Response</div>
+                <div class="metric-val" id="sched-val-resp">0.00 <span class="metric-unit">u</span></div>
+              </div>
+            </div>
+
+            <!-- Comparative Results (When Compare All is active) -->
+            <div class="canvas-card" id="sched-comparison-container" style="display: none;">
+              <div class="canvas-header">
+                <span class="canvas-title">Comparative Algorithm Benchmark</span>
+              </div>
+              <div class="data-table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Algorithm</th>
+                      <th>Avg Waiting Time</th>
+                      <th>Avg Turnaround</th>
+                      <th>Avg Response</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sched-comparison-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Raw Console Logs -->
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Simulation Output Log</span>
+              </div>
+              <pre class="console-viewer" id="sched-raw-output">Ready to execute backend.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. DYNAMIC MEMORY ALLOCATION VIEW -->
+      <section class="experiment-view" id="view-memory">
+        <div id="mem-alert" class="alert-banner"></div>
+        <div class="workbench-layout">
+          <!-- Config Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Memory Parameters</span>
+            </div>
+            <div class="panel-body">
+              <div class="form-group">
+                <label class="form-label">Workload Preset</label>
+                <select id="mem-preset" class="form-select">
+                  <option value="standard">Standard Alloc/Dealloc Workload</option>
+                  <option value="fragmentation">Severe Alternating Hole Fragmentation</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Placement Strategy</label>
+                <select id="mem-strategy" class="form-select">
+                  <option value="First Fit">First Fit</option>
+                  <option value="Best Fit">Best Fit</option>
+                  <option value="Worst Fit">Worst Fit</option>
+                  <option value="Compare All">Compare All Strategies</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Total Memory Capacity (KB)</label>
+                <input type="number" id="mem-total" class="form-input" value="1000" min="100" max="100000" />
+              </div>
+
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label class="form-label" style="margin: 0;">Operations Sequence</label>
+                  <button id="btn-mem-add-op" class="btn btn-secondary btn-sm"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Operation</button>
+                </div>
+                <div class="data-table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Operation</th>
+                        <th>PID</th>
+                        <th>Size (KB)</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="mem-ops-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <button id="btn-mem-run" class="btn btn-primary" style="width: 100%; margin-top: 10px;"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Run Simulation</button>
+            </div>
+          </div>
+
+          <!-- Display Stage -->
+          <div class="stage-panel">
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Contiguous Physical Memory Layout</span>
+              </div>
+              <div id="mem-map-container" class="viz-svg-container">
+                <div class="viz-placeholder">Execute an allocation workload to view physical memory partitions and free holes.</div>
+              </div>
+            </div>
+
+            <!-- Metrics -->
+            <div class="metrics-row">
+              <div class="metric-card">
+                <div class="metric-label">External Fragmentation</div>
+                <div class="metric-val" id="mem-val-ext-frag">0.0%</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Allocation Success Rate</div>
+                <div class="metric-val" id="mem-val-util">100.0%</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Free Blocks / Holes</div>
+                <div class="metric-val" id="mem-val-holes">0</div>
+              </div>
+            </div>
+
+            <!-- Comparison Table -->
+            <div class="canvas-card" id="mem-comparison-container" style="display: none;">
+              <div class="canvas-header">
+                <span class="canvas-title">Strategy Comparison</span>
+              </div>
+              <div class="data-table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Strategy</th>
+                      <th>Success Rate</th>
+                      <th>External Fragmentation</th>
+                      <th>Free Holes</th>
+                    </tr>
+                  </thead>
+                  <tbody id="mem-comparison-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Memory Allocation Log</span>
+              </div>
+              <pre class="console-viewer" id="mem-raw-output">Ready to simulate memory.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. PAGE REPLACEMENT VIEW -->
+      <section class="experiment-view" id="view-paging">
+        <div id="paging-alert" class="alert-banner"></div>
+        <div class="workbench-layout">
+          <!-- Config Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Paging Parameters</span>
+            </div>
+            <div class="panel-body">
+              <div class="form-group">
+                <label class="form-label">Reference String Preset</label>
+                <select id="paging-preset" class="form-select">
+                  <option value="standard">Standard 20-Page Sequence</option>
+                  <option value="belady">Belady's Anomaly Demonstration</option>
+                  <option value="looping">Looping Reference Pattern</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Algorithm</label>
+                <select id="paging-algo" class="form-select">
+                  <option value="FIFO">First-In, First-Out (FIFO)</option>
+                  <option value="LRU">Least Recently Used (LRU)</option>
+                  <option value="Optimal">Optimal (OPT / MIN)</option>
+                  <option value="Compare All">Compare All Algorithms</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Physical Frame Count</label>
+                <input type="number" id="paging-frames" class="form-input" value="3" min="1" max="16" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Reference String (Comma-Separated Pages)</label>
+                <textarea id="paging-ref-string" class="form-textarea" rows="4">7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2, 1, 2, 0, 1, 7, 0, 1</textarea>
+              </div>
+
+              <button id="btn-paging-run" class="btn btn-primary" style="width: 100%; margin-top: 10px;"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Run Simulation</button>
+            </div>
+          </div>
+
+          <!-- Display Stage -->
+          <div class="stage-panel">
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Step-by-Step Frame Inspection</span>
+              </div>
+              <div id="paging-stepper-container">
+                <div class="viz-placeholder">Run page replacement to step through frame contents and page hits/faults.</div>
+              </div>
+            </div>
+
+            <!-- Metrics -->
+            <div class="metrics-row">
+              <div class="metric-card">
+                <div class="metric-label">Page Faults</div>
+                <div class="metric-val" id="paging-val-faults" style="color: var(--danger-text);">0</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Page Hits</div>
+                <div class="metric-val" id="paging-val-hits" style="color: #34d399;">0</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Fault Rate</div>
+                <div class="metric-val" id="paging-val-rate">0.0%</div>
+              </div>
+            </div>
+
+            <!-- Comparison Table -->
+            <div class="canvas-card" id="paging-comparison-container" style="display: none;">
+              <div class="canvas-header">
+                <span class="canvas-title">Algorithm Comparison</span>
+              </div>
+              <div class="data-table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Algorithm</th>
+                      <th>Page Faults</th>
+                      <th>Page Hits</th>
+                      <th>Fault Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody id="paging-comparison-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Paging Simulation Output</span>
+              </div>
+              <pre class="console-viewer" id="paging-raw-output">Ready to simulate page replacement.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. DEADLOCK MANAGEMENT VIEW -->
+      <section class="experiment-view" id="view-deadlock">
+        <div id="dl-alert" class="alert-banner"></div>
+        <div class="workbench-layout">
+          <!-- Config Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Deadlock System State</span>
+            </div>
+            <div class="panel-body">
+              <div class="form-group">
+                <label class="form-label">System State Preset</label>
+                <select id="dl-preset" class="form-select">
+                  <option value="safe">Banker's Safe State (5 Processes, 3 Resources)</option>
+                  <option value="deadlock">Deadlock Trapped System State</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Evaluation Mode</label>
+                <select id="dl-mode" class="form-select">
+                  <option value="safety">Safety Check (Find Safe Sequence)</option>
+                  <option value="request">Resource Request Evaluation</option>
+                  <option value="detection">Deadlock Detection Analysis</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Available Vector (A, B, C...)</label>
+                <input type="text" id="dl-available" class="form-input" value="3, 3, 2" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Allocation Matrix (Row per Process)</label>
+                <textarea id="dl-allocation" class="form-textarea" rows="4">0, 1, 0&#10;2, 0, 0&#10;3, 0, 2&#10;2, 1, 1&#10;0, 0, 2</textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Maximum Claim Matrix (Row per Process)</label>
+                <textarea id="dl-max" class="form-textarea" rows="4">7, 5, 3&#10;3, 2, 2&#10;9, 0, 2&#10;2, 2, 2&#10;4, 3, 3</textarea>
+              </div>
+
+              <div id="dl-request-group" style="display: none;">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Requesting PID</label>
+                    <input type="number" id="dl-req-pid" class="form-input" value="1" min="0" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Request Vector</label>
+                    <input type="text" id="dl-req-vec" class="form-input" value="1, 0, 2" />
+                  </div>
+                </div>
+              </div>
+
+              <button id="btn-dl-run" class="btn btn-primary" style="width: 100%; margin-top: 10px;"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Evaluate State</button>
+            </div>
+          </div>
+
+          <!-- Display Stage -->
+          <div class="stage-panel">
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">System Safety State</span>
+                <span id="dl-safe-badge" class="module-tag" style="font-size: 13px; font-weight: 700;">UNTESTED</span>
+              </div>
+              <div style="padding: 16px; background-color: var(--bg-input); border: 1px solid var(--border); border-radius: 6px;">
+                <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Safe Execution Sequence:</div>
+                <div id="dl-safe-seq" style="font-size: 18px; font-weight: 700; color: #ffffff; font-family: ui-monospace, monospace; margin-top: 6px;">None</div>
+              </div>
+            </div>
+
+            <!-- Need Matrix Table -->
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Calculated Need Matrix (Max - Allocation)</span>
+              </div>
+              <div class="data-table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Process</th>
+                      <th>Remaining Need Vector</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dl-need-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Deadlock Analysis Output</span>
+              </div>
+              <pre class="console-viewer" id="dl-raw-output">Ready to evaluate deadlock conditions.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. DISK SCHEDULING VIEW -->
+      <section class="experiment-view" id="view-disk">
+        <div id="disk-alert" class="alert-banner"></div>
+        <div class="workbench-layout">
+          <!-- Config Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Disk Arm Parameters</span>
+            </div>
+            <div class="panel-body">
+              <div class="form-group">
+                <label class="form-label">Sequence Preset</label>
+                <select id="disk-preset" class="form-select">
+                  <option value="standard">Standard 8-Track Sequence</option>
+                  <option value="clustered">Clustered Cylinder Requests</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Disk Scheduling Algorithm</label>
+                <select id="disk-algo" class="form-select">
+                  <option value="FCFS">First-Come, First-Served (FCFS)</option>
+                  <option value="SSTF">Shortest Seek Time First (SSTF)</option>
+                  <option value="SCAN">SCAN (Elevator)</option>
+                  <option value="C-SCAN">Circular SCAN (C-SCAN)</option>
+                  <option value="LOOK">LOOK</option>
+                  <option value="C-LOOK">Circular LOOK (C-LOOK)</option>
+                  <option value="LIFO">Last-In, First-Out (LIFO)</option>
+                  <option value="Compare All">Compare All Algorithms</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Initial Head Position</label>
+                  <input type="number" id="disk-head" class="form-input" value="53" min="0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Total Cylinders</label>
+                  <input type="number" id="disk-total" class="form-input" value="200" min="10" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Arm Movement Direction</label>
+                <select id="disk-direction" class="form-select">
+                  <option value="increasing">Increasing (Higher Cylinders / Up)</option>
+                  <option value="decreasing">Decreasing (Lower Cylinders / Down)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Cylinder Request Queue</label>
+                <textarea id="disk-requests" class="form-textarea" rows="3">98, 183, 37, 122, 14, 124, 65, 67</textarea>
+              </div>
+
+              <button id="btn-disk-run" class="btn btn-primary" style="width: 100%; margin-top: 10px;"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Run Simulation</button>
+            </div>
+          </div>
+
+          <!-- Display Stage -->
+          <div class="stage-panel">
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Cylinder Head Seek Trajectory</span>
+              </div>
+              <div id="disk-plot-container" class="viz-svg-container">
+                <div class="viz-placeholder">Run disk scheduling to render cylinder seek trajectory graph.</div>
+              </div>
+            </div>
+
+            <!-- Metrics -->
+            <div class="metrics-row">
+              <div class="metric-card">
+                <div class="metric-label">Total Head Movement</div>
+                <div class="metric-val" id="disk-val-movement" style="color: #34d399;">0 cyl</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Average Seek Distance</div>
+                <div class="metric-val" id="disk-val-seek">0.00</div>
+              </div>
+            </div>
+
+            <!-- Comparison Table -->
+            <div class="canvas-card" id="disk-comparison-container" style="display: none;">
+              <div class="canvas-header">
+                <span class="canvas-title">Disk Algorithm Comparison</span>
+              </div>
+              <div class="data-table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Algorithm</th>
+                      <th>Total Head Movement</th>
+                      <th>Avg Seek Distance</th>
+                    </tr>
+                  </thead>
+                  <tbody id="disk-comparison-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Disk Scheduling Log</span>
+              </div>
+              <pre class="console-viewer" id="disk-raw-output">Ready to simulate disk scheduling.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. ADDRESS TRANSLATION & MMU VIEW -->
+      <section class="experiment-view" id="view-address-translation">
+        <div id="at-alert" class="alert-banner"></div>
+        <div class="workbench-layout">
+          <!-- Config Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">MMU Hardware Settings</span>
+            </div>
+            <div class="panel-body">
+              <div class="form-group">
+                <label class="form-label">Page Size</label>
+                <select id="at-page-size" class="form-select">
+                  <option value="512">512 Bytes (9-bit offset)</option>
+                  <option value="1024">1 KB (10-bit offset)</option>
+                  <option value="2048">2 KB (11-bit offset)</option>
+                  <option value="4096" selected>4 KB (12-bit offset)</option>
+                  <option value="8192">8 KB (13-bit offset)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Logical Addresses to Translate</label>
+                <textarea id="at-addresses" class="form-textarea" rows="4">0, 4096, 8192, 12288, 16384</textarea>
+                <div class="form-help">Enter decimal byte addresses separated by commas.</div>
+              </div>
+
+              <button id="btn-at-run" class="btn btn-primary" style="width: 100%; margin-top: 10px;"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Translate Addresses</button>
+            </div>
+          </div>
+
+          <!-- Display Stage -->
+          <div class="stage-panel">
+            <div class="canvas-card">
+              <div id="at-mmu-container">
+                <div class="viz-placeholder">Enter logical addresses and click "Translate Addresses" to view MMU hardware schematic.</div>
+              </div>
+            </div>
+
+            <!-- Translation Results Table -->
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Address Translation Table</span>
+              </div>
+              <div class="data-table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Virtual Address</th>
+                      <th>Page (p)</th>
+                      <th>Offset (d)</th>
+                      <th>Status</th>
+                      <th>Frame (f)</th>
+                      <th>Physical Address</th>
+                    </tr>
+                  </thead>
+                  <tbody id="at-results-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Translation Logs</span>
+              </div>
+              <pre class="console-viewer" id="at-raw-output">Ready to translate virtual memory addresses.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. SIMULATED FILE SYSTEM VIEW -->
+      <section class="experiment-view" id="view-filesystem">
+        <div id="fs-alert" class="alert-banner"></div>
+        <div class="workbench-layout">
+          <!-- Config Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">File System Parameters</span>
+            </div>
+            <div class="panel-body">
+              <div class="form-group">
+                <label class="form-label">Demonstration Preset</label>
+                <select id="fs-preset" class="form-select">
+                  <option value="standard_demo">Educational File Allocation (Contiguous + Indexed)</option>
+                  <option value="fragmentation">External Fragmentation Stress Demo</option>
+                  <option value="capacity_limit">Disk Capacity Exhaustion & Out-of-Space</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Allocation Strategy</label>
+                <select id="fs-strategy" class="form-select">
+                  <option value="Contiguous">Contiguous Allocation</option>
+                  <option value="Indexed">Indexed Allocation (Inode with Index Block)</option>
+                  <option value="Linked">Linked Allocation</option>
+                </select>
+              </div>
+
+              <button id="btn-fs-run" class="btn btn-primary" style="width: 100%; margin-top: 10px;"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Run File System Workload</button>
+            </div>
+          </div>
+
+          <!-- Display Stage -->
+          <div class="stage-panel">
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Physical Storage Allocation Map & Inodes</span>
+              </div>
+              <div id="fs-grid-container">
+                <div class="viz-placeholder">Run file system simulation to inspect physical storage block allocation bitmaps and directory inodes.</div>
+              </div>
+            </div>
+
+            <!-- Metrics -->
+            <div class="metrics-row">
+              <div class="metric-card">
+                <div class="metric-label">Allocated Blocks</div>
+                <div class="metric-val" id="fs-val-used" style="color: var(--primary);">0</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Free Blocks</div>
+                <div class="metric-val" id="fs-val-free" style="color: #34d399;">0</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Files Created</div>
+                <div class="metric-val" id="fs-val-files">0</div>
+              </div>
+            </div>
+
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">File System Operation Log</span>
+              </div>
+              <pre class="console-viewer" id="fs-raw-output">Ready to simulate file system.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. PROCESS LIFECYCLE EXPLORER VIEW -->
+      <section class="experiment-view" id="view-process-lifecycle">
+        <div id="pl-alert" class="alert-banner"></div>
+        <div class="workbench-layout">
+          <!-- Config Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Lifecycle Controls</span>
+            </div>
+            <div class="panel-body">
+              <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
+                Executes the authoritative C++ ProcessManager state machine simulating process fork, execve replacement, waiting queues, exit termination, zombie reaping, and orphan adoption.
+              </p>
+
+              <button id="btn-pl-run" class="btn btn-primary" style="width: 100%;"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Run Lifecycle Simulation</button>
+            </div>
+          </div>
+
+          <!-- Display Stage -->
+          <div class="stage-panel">
+            <!-- Metrics -->
+            <div class="metrics-row">
+              <div class="metric-card">
+                <div class="metric-label">Total Transitions</div>
+                <div class="metric-val" id="pl-val-transitions">0</div>
+              </div>
+            </div>
+
+            <!-- Transitions Table -->
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">State Machine Transitions History</span>
+              </div>
+              <div class="data-table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>PID</th>
+                      <th>Action</th>
+                      <th>Source State</th>
+                      <th></th>
+                      <th>Target State</th>
+                      <th>Context / Details</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pl-history-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Process Manager Event Logs</span>
+              </div>
+              <pre class="console-viewer" id="pl-raw-output">Ready to trace process lifecycle.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. POSIX & LINUX CONCURRENCY SANDBOX VIEW -->
+      <section class="experiment-view" id="view-linux-experiments">
+        <div id="lx-alert" class="alert-banner"></div>
+        <div class="workbench-layout">
+          <!-- Config Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Kernel Experiment Category</span>
+            </div>
+            <div class="panel-body">
+              <div class="form-group">
+                <label class="form-label">Subsystem</label>
+                <select id="lx-category" class="form-select">
+                  <option value="all">Run All Kernel Experiments</option>
+                  <option value="sync">Thread Synchronization (Peterson's, Mutex, Semaphores)</option>
+                  <option value="producer_consumer">Classical Producer-Consumer Bounded-Buffer</option>
+                  <option value="ipc">Inter-Process Communication (Pipes, FIFO, SHM, MQ)</option>
+                  <option value="lifecycle">Process Lifecycle (Fork, Exec, Zombie, Orphan)</option>
+                </select>
+              </div>
+
+              <button id="btn-lx-run" class="btn btn-primary" style="width: 100%; margin-top: 10px;"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Execute Concurrency Experiment</button>
+            </div>
+          </div>
+
+          <!-- Display Stage -->
+          <div class="stage-panel">
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Kernel Execution Trace & Verification</span>
+              </div>
+              <pre class="console-viewer" id="lx-raw-output" style="max-height: 480px;">Select a kernel category and click "Execute Concurrency Experiment".</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10. HOST DIAGNOSTICS VIEW -->
+      <section class="experiment-view" id="view-host-monitor">
+        <div id="hm-alert" class="alert-banner"></div>
+        <div class="workbench-layout">
+          <!-- Config Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Diagnostics Controller</span>
+            </div>
+            <div class="panel-body">
+              <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
+                Polls the active Linux kernel running in WSL/Native host to read real CPU Jiffies, memory pages from /proc/meminfo, and active task states.
+              </p>
+
+              <button id="btn-hm-refresh" class="btn btn-primary" style="width: 100%;"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>Refresh Host Metrics</button>
+            </div>
+          </div>
+
+          <!-- Display Stage -->
+          <div class="stage-panel">
+            <!-- Metrics -->
+            <div class="metrics-row">
+              <div class="metric-card">
+                <div class="metric-label">Total CPU Usage</div>
+                <div class="metric-val" id="hm-val-cpu" style="color: var(--primary);">0.0%</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">User Space CPU</div>
+                <div class="metric-val" id="hm-val-user">0.0%</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">System / Kernel CPU</div>
+                <div class="metric-val" id="hm-val-sys">0.0%</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Active RAM Used</div>
+                <div class="metric-val" id="hm-val-ram" style="color: #34d399;">0 MB</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Free RAM Available</div>
+                <div class="metric-val" id="hm-val-free">0 MB</div>
+              </div>
+            </div>
+
+            <!-- Process Table -->
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Top Active Host Tasks</span>
+              </div>
+              <div class="data-table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>PID</th>
+                      <th>Command / Process Name</th>
+                      <th>State</th>
+                      <th>CPU %</th>
+                      <th>Resident Memory</th>
+                    </tr>
+                  </thead>
+                  <tbody id="hm-proc-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="canvas-card">
+              <div class="canvas-header">
+                <span class="canvas-title">Raw Host Telemetry Snapshot</span>
+              </div>
+              <pre class="console-viewer" id="hm-raw-output">Click "Refresh Host Metrics" to poll Linux kernel.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/visualizations.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
