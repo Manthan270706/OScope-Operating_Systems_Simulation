@@ -125,7 +125,7 @@ class HostMonitorPage(QWidget):
         title_row.setSpacing(12)
 
         title = QLabel("Host Resource Monitoring")
-        title.setStyleSheet("font-size: 24px; font-weight: 800; color: #172033; letter-spacing: 0.5px;")
+        title.setStyleSheet("font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;")
         title_row.addWidget(title)
 
         self.scope_badge = StatusBadge("WSL Linux Kernel Observation", "success")
@@ -164,7 +164,7 @@ class HostMonitorPage(QWidget):
         top_row.setSpacing(10)
 
         lbl_controls = QLabel("Telemetry Sampling & Polling Engine")
-        lbl_controls.setStyleSheet("font-size: 14px; font-weight: 700; color: #172033;")
+        lbl_controls.setStyleSheet("font-size: 14px; font-weight: 700; color: #ffffff;")
         top_row.addWidget(lbl_controls)
         top_row.addStretch()
 
@@ -184,7 +184,7 @@ class HostMonitorPage(QWidget):
             f"""
             QPushButton {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {ACCENT}, stop:1 {ACCENT_INDIGO});
-                color: #172033;
+                color: #ffffff;
                 font-weight: 700;
                 font-size: 13px;
                 padding: 0 20px;
@@ -217,7 +217,7 @@ class HostMonitorPage(QWidget):
             QPushButton:hover {{
                 background-color: rgba(255, 255, 255, 0.05);
                 border-color: {ACCENT_CYAN};
-                color: #172033;
+                color: #ffffff;
             }}
             """
         )
@@ -240,7 +240,7 @@ class HostMonitorPage(QWidget):
             f"""
             QComboBox {{
                 background-color: {BG_ELEVATED};
-                color: #172033;
+                color: #ffffff;
                 border: 1px solid {BORDER};
                 border-radius: 6px;
                 padding: 4px 12px;
@@ -251,7 +251,7 @@ class HostMonitorPage(QWidget):
             }}
             QComboBox QAbstractItemView {{
                 background-color: {BG_SURFACE};
-                color: #172033;
+                color: #ffffff;
                 border: 1px solid {BORDER};
                 selection-background-color: {ACCENT};
             }}
@@ -294,7 +294,7 @@ class HostMonitorPage(QWidget):
         icon = QLabel("🔍")
         icon.setStyleSheet("font-size: 15px;")
         lbl_title = QLabel("Telemetry Scope & Ground Truth Transparency")
-        lbl_title.setStyleSheet("font-size: 13px; font-weight: 700; color: #172033;")
+        lbl_title.setStyleSheet("font-size: 13px; font-weight: 700; color: #ffffff;")
         header_row.addWidget(icon)
         header_row.addWidget(lbl_title)
         header_row.addStretch()
@@ -355,7 +355,7 @@ class HostMonitorPage(QWidget):
             }}
             QTabBar::tab:selected {{
                 background-color: {BG_SURFACE};
-                color: #172033;
+                color: #ffffff;
                 border-top: 2px solid {ACCENT_CYAN};
             }}
             QTabBar::tab:hover:!selected {{
@@ -421,7 +421,7 @@ class HostMonitorPage(QWidget):
         l_diag.addWidget(self.lbl_diag_summary)
 
         lbl_raw = QLabel("Raw C++ Backend Execution Output (/proc snapshot):")
-        lbl_raw.setStyleSheet("font-size: 12px; font-weight: 700; color: #172033;")
+        lbl_raw.setStyleSheet("font-size: 12px; font-weight: 700; color: #ffffff;")
         l_diag.addWidget(lbl_raw)
 
         self.txt_raw = QTextEdit()
@@ -518,7 +518,7 @@ class HostMonitorPage(QWidget):
             f"""
             QPushButton {{
                 background-color: {BG_ELEVATED};
-                color: #172033;
+                color: #ffffff;
                 font-weight: 700;
                 font-size: 13px;
                 padding: 0 20px;
@@ -540,7 +540,7 @@ class HostMonitorPage(QWidget):
             f"""
             QPushButton {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {ACCENT}, stop:1 {ACCENT_INDIGO});
-                color: #172033;
+                color: #ffffff;
                 font-weight: 700;
                 font-size: 13px;
                 padding: 0 20px;

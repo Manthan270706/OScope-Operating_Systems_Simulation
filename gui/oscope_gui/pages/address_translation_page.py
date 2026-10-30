@@ -166,7 +166,7 @@ class AddressTranslationPage(QWidget):
             f"""
             QPushButton {{
                 background-color: {ACCENT};
-                color: #172033;
+                color: #ffffff;
                 font-weight: bold;
                 font-size: 13px;
                 border: none;

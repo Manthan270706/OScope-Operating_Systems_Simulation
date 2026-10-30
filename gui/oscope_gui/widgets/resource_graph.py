@@ -285,10 +285,8 @@ class GraphCanvas(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        # Background with border
-        painter.fillRect(self.rect(), QColor("#FFFFFF"))
-        painter.setPen(QPen(QColor(BORDER), 1))
-        painter.drawRoundedRect(QRectF(1, 1, self.width() - 2, self.height() - 2), 8, 8)
+        # Background
+        painter.fillRect(self.rect(), QColor(BG_CANVAS))
 
         if not self.result or self.result.num_processes == 0 or self.result.num_resources == 0:
             self._paint_empty_state(painter)

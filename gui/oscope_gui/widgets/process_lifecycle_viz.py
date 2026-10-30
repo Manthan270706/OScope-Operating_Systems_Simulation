@@ -35,7 +35,6 @@ from ..theme import (
     ACCENT_AMBER,
     ACCENT_CYAN,
     ACCENT_EMERALD,
-    ACCENT_HOVER,
     ACCENT_INDIGO,
     ACCENT_ROSE,
     ACCENT_VIOLET,
@@ -176,22 +175,26 @@ class ProcessStateDiagramWidget(QWidget):
 
         # Glow / halo if active
         if is_active:
-            glow_rect = QRectF(pos.x() - rx - 5, pos.y() - ry - 5, (rx + 5) * 2, (ry + 5) * 2)
-            painter.setBrush(QColor(37, 99, 235, 30))
+            glow_rect = QRectF(pos.x() - rx - 6, pos.y() - ry - 6, (rx + 6) * 2, (ry + 6) * 2)
+            painter.setBrush(QColor(0, 229, 255, 30))
             painter.setPen(Qt.NoPen)
-            painter.drawRoundedRect(glow_rect, 12, 12)
+            painter.drawRoundedRect(glow_rect, 14, 14)
 
-            painter.setBrush(QBrush(QColor(ACCENT)))
-            painter.setPen(QPen(QColor(ACCENT_HOVER), 2))
+            # Node fill
+            grad = QLinearGradient(rect.topLeft(), rect.bottomRight())
+            grad.setColorAt(0.0, QColor("#0369a1"))
+            grad.setColorAt(1.0, QColor("#0284c7"))
+            painter.setBrush(QBrush(grad))
+            painter.setPen(QPen(QColor(ACCENT_CYAN), 2.5))
         else:
-            painter.setBrush(QColor("#FFFFFF"))
+            painter.setBrush(QColor(BG_DARK))
             painter.setPen(QPen(QColor(BORDER_LIGHT), 1.5))
 
-        painter.drawRoundedRect(rect, 8, 8)
+        painter.drawRoundedRect(rect, 10, 10)
 
         # Text
         painter.setFont(QFont("Segoe UI", 10, QFont.Bold if is_active else QFont.Normal))
-        painter.setPen(QColor("#ffffff" if is_active else TEXT_PRIMARY))
+        painter.setPen(QColor("#ffffff" if is_active else TEXT_SECONDARY))
         painter.drawText(rect, Qt.AlignCenter, name)
 
     def _draw_arrow(

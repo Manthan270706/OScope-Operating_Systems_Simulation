@@ -21,6 +21,7 @@ from ..theme import (
     ACCENT_HOVER,
     BORDER,
     BORDER_LIGHT,
+    FONT_FAMILY,
     PROCESS_COLORS,
     TEXT_MUTED,
     TEXT_PRIMARY,
@@ -111,13 +112,12 @@ class MemoryMapWidget(QWidget):
 
         # Outer canvas
         painter.setPen(QPen(QColor(BORDER), 1))
-        painter.setBrush(QBrush(QColor("#FFFFFF")))
+        painter.setBrush(QBrush(QColor("#0e1422")))
         painter.drawRoundedRect(QRectF(1, 1, w - 2, h - 2), 8, 8)
 
         if not self._blocks:
             painter.setPen(QColor(TEXT_MUTED))
-            font = QFont()
-            font.setPointSize(11)
+            font = QFont(FONT_FAMILY, 11)
             painter.setFont(font)
             painter.drawText(
                 QRectF(0, 0, w, h),
@@ -135,13 +135,8 @@ class MemoryMapWidget(QWidget):
         self._block_rects.clear()
 
         # Fonts
-        title_font = QFont()
-        title_font.setPointSize(10)
-        title_font.setBold(True)
-
-        sub_font = QFont()
-        sub_font.setPointSize(8)
-        sub_font.setBold(True)
+        title_font = QFont(FONT_FAMILY, 10, QFont.Bold)
+        sub_font = QFont(FONT_FAMILY, 8, QFont.Bold)
 
         address_points = {0, self._total_memory}
 
@@ -202,17 +197,25 @@ class MemoryMapWidget(QWidget):
                         painter.drawText(rect, Qt.AlignCenter, label)
 
             else:
-                # Neutral light styling for free holes
-                free_bg = QColor("#F1F5F9")
-                border_pen = QPen(QColor("#2563EB" if is_hovered else "#CBD5E1"), 1.8 if is_hovered else 1)
+                # Emerald/Mint gradient for free holes
+                free_color = QColor("#065f46")
+                gradient = QLinearGradient(rect.left(), rect.top(), rect.left(), rect.bottom())
+                if is_hovered:
+                    gradient.setColorAt(0.0, free_color.lighter(140))
+                    gradient.setColorAt(1.0, free_color.lighter(120))
+                    border_pen = QPen(QColor(ACCENT_EMERALD), 1.8)
+                else:
+                    gradient.setColorAt(0.0, free_color.lighter(115))
+                    gradient.setColorAt(1.0, free_color.darker(110))
+                    border_pen = QPen(QColor("#10b981"), 1)
 
                 painter.setPen(border_pen)
-                painter.setBrush(QBrush(free_bg))
+                painter.setBrush(QBrush(gradient))
                 painter.drawRoundedRect(rect, 4, 4)
 
                 # Text label
                 if seg_w > 28:
-                    painter.setPen(QColor(TEXT_SECONDARY))
+                    painter.setPen(QColor("#34d399"))
                     painter.setFont(title_font)
                     if seg_w > 60:
                         painter.drawText(
@@ -221,7 +224,7 @@ class MemoryMapWidget(QWidget):
                             "FREE",
                         )
                         painter.setFont(sub_font)
-                        painter.setPen(QColor(TEXT_MUTED))
+                        painter.setPen(QColor(52, 211, 153, 220))
                         painter.drawText(
                             QRectF(rect.left(), bar_y + (bar_h / 2) - 1, rect.width(), (bar_h / 2) - 2),
                             Qt.AlignCenter,
@@ -234,9 +237,7 @@ class MemoryMapWidget(QWidget):
         painter.setPen(QPen(QColor(BORDER_LIGHT), 1.5))
         painter.drawLine(int(margin_x), int(axis_y + 4), int(margin_x + usable_w), int(axis_y + 4))
 
-        axis_font = QFont()
-        axis_font.setPointSize(9)
-        axis_font.setBold(True)
+        axis_font = QFont(FONT_FAMILY, 9, QFont.Bold)
         painter.setFont(axis_font)
 
         sorted_addrs = sorted(address_points)

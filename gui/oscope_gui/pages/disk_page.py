@@ -136,7 +136,7 @@ class DiskPage(QWidget):
         layout.setSpacing(4)
 
         title = QLabel("Disk Scheduling Simulator")
-        title.setStyleSheet("font-size: 24px; font-weight: 800; color: #172033; letter-spacing: 0.5px;")
+        title.setStyleSheet("font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;")
 
         subtitle = QLabel(
             "Explore secondary storage seek latency optimization, boundary reversals, and circular wraparound head trajectories."
@@ -170,7 +170,7 @@ class DiskPage(QWidget):
 
         # Algorithm Choice
         lbl_algo = QLabel("Scheduling Algorithm:")
-        lbl_algo.setStyleSheet("font-weight: 700; font-size: 13px; color: #172033;")
+        lbl_algo.setStyleSheet("font-weight: 700; font-size: 13px; color: #ffffff;")
 
         self.combo_algo = QComboBox()
         for algo in (
@@ -193,12 +193,12 @@ class DiskPage(QWidget):
                 border: 1px solid {BORDER_LIGHT};
                 border-radius: 6px;
                 padding: 6px 12px;
-                color: #172033;
+                color: #ffffff;
                 font-weight: 600;
             }}
             QComboBox QAbstractItemView {{
                 background-color: {BG_ELEVATED};
-                color: #172033;
+                color: #ffffff;
                 selection-background-color: {ACCENT};
             }}
             """
@@ -207,7 +207,7 @@ class DiskPage(QWidget):
 
         # Direction Choice (for directional algorithms)
         self.lbl_dir = QLabel("Arm Direction:")
-        self.lbl_dir.setStyleSheet("font-weight: 700; font-size: 13px; color: #172033;")
+        self.lbl_dir.setStyleSheet("font-weight: 700; font-size: 13px; color: #ffffff;")
 
         self.combo_dir = QComboBox()
         self.combo_dir.addItem(DiskDirection.INCREASING.display_name, DiskDirection.INCREASING)
@@ -220,7 +220,7 @@ class DiskPage(QWidget):
                 border: 1px solid {BORDER_LIGHT};
                 border-radius: 6px;
                 padding: 6px 12px;
-                color: #172033;
+                color: #ffffff;
                 font-weight: 600;
             }}
             QComboBox:disabled {{
@@ -230,7 +230,7 @@ class DiskPage(QWidget):
             }}
             QComboBox QAbstractItemView {{
                 background-color: {BG_ELEVATED};
-                color: #172033;
+                color: #ffffff;
                 selection-background-color: {ACCENT};
             }}
             """
@@ -287,7 +287,7 @@ class DiskPage(QWidget):
         layout.setSpacing(10)
 
         header = QLabel("Understanding Disk Arm Scheduling Mechanics & Boundaries")
-        header.setStyleSheet("font-size: 13px; font-weight: 700; color: #172033;")
+        header.setStyleSheet("font-size: 13px; font-weight: 700; color: #ffffff;")
         layout.addWidget(header)
 
         grid = QGridLayout()
@@ -338,7 +338,7 @@ class DiskPage(QWidget):
 
             top = QHBoxLayout()
             lbl_t = QLabel(title)
-            lbl_t.setStyleSheet("font-size: 11px; font-weight: 700; color: #172033;")
+            lbl_t.setStyleSheet("font-size: 11px; font-weight: 700; color: #ffffff;")
             badge = QLabel(tag)
             badge.setStyleSheet(
                 f"font-size: 9px; font-weight: 700; color: {color}; "
@@ -386,12 +386,12 @@ class DiskPage(QWidget):
         # Min Cylinder
         min_box = QHBoxLayout()
         lbl_min = QLabel("Min Cylinder:")
-        lbl_min.setStyleSheet("font-weight: 600; color: #172033; font-size: 12px;")
+        lbl_min.setStyleSheet("font-weight: 600; color: #ffffff; font-size: 12px;")
         self.spin_min = QSpinBox()
         self.spin_min.setRange(0, 100000)
         self.spin_min.setValue(0)
         self.spin_min.setFixedWidth(75)
-        self.spin_min.setStyleSheet(f"background-color: {BG_INPUT}; border: 1px solid {BORDER_LIGHT}; color: #172033; padding: 5px;")
+        self.spin_min.setStyleSheet(f"background-color: {BG_INPUT}; border: 1px solid {BORDER_LIGHT}; color: #ffffff; padding: 5px;")
         self.spin_min.valueChanged.connect(self._on_input_changed)
         min_box.addWidget(lbl_min)
         min_box.addWidget(self.spin_min)
@@ -399,12 +399,12 @@ class DiskPage(QWidget):
         # Max Cylinder
         max_box = QHBoxLayout()
         lbl_max = QLabel("Max Cylinder:")
-        lbl_max.setStyleSheet("font-weight: 600; color: #172033; font-size: 12px;")
+        lbl_max.setStyleSheet("font-weight: 600; color: #ffffff; font-size: 12px;")
         self.spin_max = QSpinBox()
         self.spin_max.setRange(1, 100000)
         self.spin_max.setValue(199)
         self.spin_max.setFixedWidth(85)
-        self.spin_max.setStyleSheet(f"background-color: {BG_INPUT}; border: 1px solid {BORDER_LIGHT}; color: #172033; padding: 5px;")
+        self.spin_max.setStyleSheet(f"background-color: {BG_INPUT}; border: 1px solid {BORDER_LIGHT}; color: #ffffff; padding: 5px;")
         self.spin_max.valueChanged.connect(self._on_input_changed)
         max_box.addWidget(lbl_max)
         max_box.addWidget(self.spin_max)
@@ -412,7 +412,7 @@ class DiskPage(QWidget):
         # Initial Head
         head_box = QHBoxLayout()
         lbl_head = QLabel("Initial Head Position:")
-        lbl_head.setStyleSheet("font-weight: 600; color: #172033; font-size: 12px;")
+        lbl_head.setStyleSheet("font-weight: 600; color: #ffffff; font-size: 12px;")
         self.spin_head = QSpinBox()
         self.spin_head.setRange(0, 100000)
         self.spin_head.setValue(53)
@@ -437,7 +437,7 @@ class DiskPage(QWidget):
         req_box = QVBoxLayout()
         req_box.setSpacing(4)
         lbl_req = QLabel("Cylinder Request Queue (Space- or comma-separated integers):")
-        lbl_req.setStyleSheet("font-weight: 600; color: #172033; font-size: 12px;")
+        lbl_req.setStyleSheet("font-weight: 600; color: #ffffff; font-size: 12px;")
         self.txt_requests = QLineEdit("98 183 37 122 14 124 65 67")
         self.txt_requests.setStyleSheet(
             f"""
@@ -461,7 +461,7 @@ class DiskPage(QWidget):
         preset_box = QVBoxLayout()
         preset_box.setSpacing(4)
         lbl_pre = QLabel("Educational Workload Presets:")
-        lbl_pre.setStyleSheet("font-weight: 600; color: #172033; font-size: 12px;")
+        lbl_pre.setStyleSheet("font-weight: 600; color: #ffffff; font-size: 12px;")
         self.combo_presets = QComboBox()
         self.combo_presets.addItem("Textbook Benchmark (Silberschatz 8-Req: 98..67, Head 53)", "textbook")
         self.combo_presets.addItem("High Boundary Locality (0, 195, 10, 180, 5, 199, Head 100)", "boundary")
@@ -476,13 +476,13 @@ class DiskPage(QWidget):
                 background-color: {BG_INPUT};
                 border: 1px solid {BORDER_LIGHT};
                 border-radius: 6px;
-                color: #172033;
+                color: #ffffff;
                 padding: 6px 10px;
                 font-size: 12px;
             }}
             QComboBox QAbstractItemView {{
                 background-color: {BG_ELEVATED};
-                color: #172033;
+                color: #ffffff;
                 selection-background-color: {ACCENT};
             }}
             """
@@ -508,7 +508,7 @@ class DiskPage(QWidget):
             f"""
             QPushButton {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {ACCENT}, stop:1 {ACCENT_INDIGO});
-                color: #172033;
+                color: #ffffff;
                 font-weight: 700;
                 font-size: 13px;
                 border-radius: 6px;
@@ -633,7 +633,7 @@ class DiskPage(QWidget):
             f"""
             QTableWidget {{
                 background-color: {BG_SURFACE};
-                color: #172033;
+                color: #ffffff;
                 gridline-color: {BORDER};
                 border: none;
                 font-size: 12px;
@@ -665,7 +665,7 @@ class DiskPage(QWidget):
             f"""
             QTableWidget {{
                 background-color: {BG_SURFACE};
-                color: #172033;
+                color: #ffffff;
                 gridline-color: {BORDER};
                 border: none;
                 font-size: 12px;
@@ -734,7 +734,7 @@ class DiskPage(QWidget):
         # Enable direction dropdown only for directional algorithms
         if algo.needs_direction:
             self.combo_dir.setEnabled(True)
-            self.lbl_dir.setStyleSheet("font-weight: 700; font-size: 13px; color: #172033;")
+            self.lbl_dir.setStyleSheet("font-weight: 700; font-size: 13px; color: #ffffff;")
         else:
             self.combo_dir.setEnabled(False)
             self.lbl_dir.setStyleSheet(f"font-weight: 700; font-size: 13px; color: {TEXT_MUTED};")

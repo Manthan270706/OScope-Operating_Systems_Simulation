@@ -161,7 +161,7 @@ class ProcessLifecyclePage(QWidget):
             f"""
             QPushButton {{
                 background-color: {ACCENT};
-                color: #172033;
+                color: #ffffff;
                 font-weight: bold;
                 font-size: 13px;
                 border: none;
@@ -251,7 +251,7 @@ class ProcessLifecyclePage(QWidget):
             f"""
             QPushButton {{
                 background-color: {ACCENT_INDIGO};
-                color: #172033;
+                color: #ffffff;
                 font-weight: bold;
                 border: none;
                 border-radius: 5px;
@@ -575,7 +575,7 @@ class ProcessLifecyclePage(QWidget):
             }}
             QPushButton:hover {{
                 background-color: {color_hex};
-                color: #172033;
+                color: #ffffff;
             }}
             QPushButton:disabled {{
                 background-color: {BG_DARK};

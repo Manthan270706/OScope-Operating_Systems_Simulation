@@ -143,7 +143,7 @@ class DeadlockPage(QWidget):
         layout.setSpacing(4)
 
         title = QLabel("Deadlock Management Simulator")
-        title.setStyleSheet("font-size: 24px; font-weight: 800; color: #172033; letter-spacing: 0.5px;")
+        title.setStyleSheet("font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;")
 
         subtitle = QLabel("Explore how processes compete for resources and how operating systems determine whether execution can proceed safely.")
         subtitle.setWordWrap(True)
@@ -172,7 +172,7 @@ class DeadlockPage(QWidget):
 
         top_row = QHBoxLayout()
         lbl_mode = QLabel("Analysis Mode:")
-        lbl_mode.setStyleSheet("font-weight: 700; font-size: 13px; color: #172033;")
+        lbl_mode.setStyleSheet("font-weight: 700; font-size: 13px; color: #ffffff;")
 
         self.combo_mode = QComboBox()
         self.combo_mode.addItem("Banker's Safety Algorithm (Avoidance)", DeadlockMode.SAFETY)
@@ -186,12 +186,12 @@ class DeadlockPage(QWidget):
                 border: 1px solid {BORDER_LIGHT};
                 border-radius: 6px;
                 padding: 6px 12px;
-                color: #172033;
+                color: #ffffff;
                 font-weight: 600;
             }}
             QComboBox QAbstractItemView {{
                 background-color: {BG_ELEVATED};
-                color: #172033;
+                color: #ffffff;
                 selection-background-color: {ACCENT};
             }}
             """
@@ -245,7 +245,7 @@ class DeadlockPage(QWidget):
         layout.setSpacing(10)
 
         header = QLabel("Understanding Deadlock & Banker's Algorithm Concepts")
-        header.setStyleSheet("font-size: 13px; font-weight: 700; color: #172033;")
+        header.setStyleSheet("font-size: 13px; font-weight: 700; color: #ffffff;")
         layout.addWidget(header)
 
         grid = QGridLayout()
@@ -276,7 +276,7 @@ class DeadlockPage(QWidget):
 
             top = QHBoxLayout()
             lbl_t = QLabel(title)
-            lbl_t.setStyleSheet("font-size: 11px; font-weight: 700; color: #172033;")
+            lbl_t.setStyleSheet("font-size: 11px; font-weight: 700; color: #ffffff;")
             badge = QLabel(tag)
             badge.setStyleSheet(f"font-size: 9px; font-weight: 700; color: {color}; background-color: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 3px;")
             top.addWidget(lbl_t)
@@ -321,12 +321,12 @@ class DeadlockPage(QWidget):
         # Process Count
         p_box = QHBoxLayout()
         lbl_p = QLabel("Processes (N):")
-        lbl_p.setStyleSheet("font-weight: 600; color: #172033; font-size: 12px;")
+        lbl_p.setStyleSheet("font-weight: 600; color: #ffffff; font-size: 12px;")
         self.spin_processes = QSpinBox()
         self.spin_processes.setRange(1, 10)
         self.spin_processes.setValue(5)
         self.spin_processes.setFixedWidth(65)
-        self.spin_processes.setStyleSheet(f"background-color: {BG_INPUT}; border: 1px solid {BORDER_LIGHT}; color: #172033; padding: 5px;")
+        self.spin_processes.setStyleSheet(f"background-color: {BG_INPUT}; border: 1px solid {BORDER_LIGHT}; color: #ffffff; padding: 5px;")
         self.spin_processes.valueChanged.connect(self._on_dimensions_changed)
         p_box.addWidget(lbl_p)
         p_box.addWidget(self.spin_processes)
@@ -334,12 +334,12 @@ class DeadlockPage(QWidget):
         # Resource Count
         r_box = QHBoxLayout()
         lbl_r = QLabel("Resource Types (M):")
-        lbl_r.setStyleSheet("font-weight: 600; color: #172033; font-size: 12px;")
+        lbl_r.setStyleSheet("font-weight: 600; color: #ffffff; font-size: 12px;")
         self.spin_resources = QSpinBox()
         self.spin_resources.setRange(1, 6)
         self.spin_resources.setValue(3)
         self.spin_resources.setFixedWidth(65)
-        self.spin_resources.setStyleSheet(f"background-color: {BG_INPUT}; border: 1px solid {BORDER_LIGHT}; color: #172033; padding: 5px;")
+        self.spin_resources.setStyleSheet(f"background-color: {BG_INPUT}; border: 1px solid {BORDER_LIGHT}; color: #ffffff; padding: 5px;")
         self.spin_resources.valueChanged.connect(self._on_dimensions_changed)
         r_box.addWidget(lbl_r)
         r_box.addWidget(self.spin_resources)
@@ -347,7 +347,7 @@ class DeadlockPage(QWidget):
         # Available Vector
         avail_box = QHBoxLayout()
         lbl_avail = QLabel("Available Resources:")
-        lbl_avail.setStyleSheet("font-weight: 600; color: #172033; font-size: 12px;")
+        lbl_avail.setStyleSheet("font-weight: 600; color: #ffffff; font-size: 12px;")
         self.txt_available = QLineEdit("3, 3, 2")
         self.txt_available.setFixedWidth(140)
         self.txt_available.setStyleSheet(f"background-color: {BG_INPUT}; border: 1px solid {BORDER_LIGHT}; color: {ACCENT_AMBER}; font-weight: 700; padding: 5px 8px;")
@@ -366,7 +366,7 @@ class DeadlockPage(QWidget):
         row2.setSpacing(12)
 
         lbl_pre = QLabel("Preset Workloads:")
-        lbl_pre.setStyleSheet("font-weight: 600; color: #172033; font-size: 12px;")
+        lbl_pre.setStyleSheet("font-weight: 600; color: #ffffff; font-size: 12px;")
         self.combo_presets = QComboBox()
         self.combo_presets.addItem("Textbook Safe State (Silberschatz 5P/3R)", "textbook_safe")
         self.combo_presets.addItem("Unsafe State (Resource Starvation)", "unsafe_starvation")
@@ -377,7 +377,7 @@ class DeadlockPage(QWidget):
         self.combo_presets.setMinimumWidth(320)
         self.combo_presets.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.combo_presets.setMaximumWidth(520)
-        self.combo_presets.setStyleSheet(f"background-color: {BG_INPUT}; border: 1px solid {BORDER_LIGHT}; color: #172033; padding: 5px 10px;")
+        self.combo_presets.setStyleSheet(f"background-color: {BG_INPUT}; border: 1px solid {BORDER_LIGHT}; color: #ffffff; padding: 5px 10px;")
         self.combo_presets.currentIndexChanged.connect(self._on_preset_selected)
 
         row2.addWidget(lbl_pre)
@@ -403,13 +403,13 @@ class DeadlockPage(QWidget):
         req_layout.setContentsMargins(4, 4, 4, 4)
 
         lbl_req_p = QLabel("Requesting Process:")
-        lbl_req_p.setStyleSheet("font-weight: 600; color: #172033; font-size: 12px;")
+        lbl_req_p.setStyleSheet("font-weight: 600; color: #ffffff; font-size: 12px;")
         self.combo_req_proc = QComboBox()
         self.combo_req_proc.setFixedWidth(90)
-        self.combo_req_proc.setStyleSheet(f"background-color: {BG_INPUT}; border: 1px solid {BORDER_LIGHT}; color: #172033; padding: 4px;")
+        self.combo_req_proc.setStyleSheet(f"background-color: {BG_INPUT}; border: 1px solid {BORDER_LIGHT}; color: #ffffff; padding: 4px;")
 
         lbl_req_v = QLabel("Requested Resources (Vector):")
-        lbl_req_v.setStyleSheet("font-weight: 600; color: #172033; font-size: 12px; margin-left: 12px;")
+        lbl_req_v.setStyleSheet("font-weight: 600; color: #ffffff; font-size: 12px; margin-left: 12px;")
         self.txt_request_vec = QLineEdit("1, 0, 2")
         self.txt_request_vec.setFixedWidth(140)
         self.txt_request_vec.setStyleSheet(f"background-color: {BG_INPUT}; border: 1px solid {BORDER_LIGHT}; color: {ACCENT_EMERALD}; font-weight: 700; padding: 4px 8px;")
@@ -471,7 +471,7 @@ class DeadlockPage(QWidget):
             f"""
             QPushButton {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {ACCENT}, stop:1 {ACCENT_INDIGO});
-                color: #172033;
+                color: #ffffff;
                 font-weight: 700;
                 font-size: 13px;
                 border-radius: 6px;
@@ -616,7 +616,7 @@ class DeadlockPage(QWidget):
             f"""
             QTableWidget {{
                 background-color: {BG_SURFACE};
-                color: #172033;
+                color: #ffffff;
                 gridline-color: {BORDER};
                 border: none;
                 font-size: 12px;

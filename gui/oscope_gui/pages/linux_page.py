@@ -128,7 +128,7 @@ class LinuxExperimentsPage(QWidget):
         title_row.setSpacing(12)
 
         title = QLabel("Linux / POSIX IPC & Synchronization Lab")
-        title.setStyleSheet("font-size: 24px; font-weight: 800; color: #172033; letter-spacing: 0.5px;")
+        title.setStyleSheet("font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;")
         title_row.addWidget(title)
 
         self.backend_badge = StatusBadge("POSIX Native Engine", "success")
@@ -167,7 +167,7 @@ class LinuxExperimentsPage(QWidget):
         top_row.setSpacing(10)
 
         lbl_actions = QLabel("Simulation Controls & Experiment Runners")
-        lbl_actions.setStyleSheet("font-size: 14px; font-weight: 700; color: #172033;")
+        lbl_actions.setStyleSheet("font-size: 14px; font-weight: 700; color: #ffffff;")
         top_row.addWidget(lbl_actions)
         top_row.addStretch()
 
@@ -187,7 +187,7 @@ class LinuxExperimentsPage(QWidget):
             f"""
             QPushButton {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {ACCENT}, stop:1 {ACCENT_INDIGO});
-                color: #172033;
+                color: #ffffff;
                 font-weight: 700;
                 font-size: 13px;
                 padding: 0 20px;
@@ -248,7 +248,7 @@ class LinuxExperimentsPage(QWidget):
                 border: 1px solid {BORDER};
             }}
             QPushButton:hover {{
-                color: #172033;
+                color: #ffffff;
                 border-color: {BORDER_LIGHT};
             }}
             """
@@ -274,7 +274,7 @@ class LinuxExperimentsPage(QWidget):
             QPushButton:hover {{
                 background-color: rgba(255, 255, 255, 0.05);
                 border-color: {accent_color};
-                color: #172033;
+                color: #ffffff;
             }}
             QPushButton:disabled {{
                 color: {TEXT_MUTED};
@@ -304,7 +304,7 @@ class LinuxExperimentsPage(QWidget):
         icon = QLabel("💡")
         icon.setStyleSheet("font-size: 15px;")
         lbl_title = QLabel("Operating Systems Principles — POSIX Concurrency & IPC Concepts")
-        lbl_title.setStyleSheet("font-size: 13px; font-weight: 700; color: #172033;")
+        lbl_title.setStyleSheet("font-size: 13px; font-weight: 700; color: #ffffff;")
         header_row.addWidget(icon)
         header_row.addWidget(lbl_title)
         header_row.addStretch()
@@ -365,7 +365,7 @@ class LinuxExperimentsPage(QWidget):
             }}
             QTabBar::tab:selected {{
                 background-color: {BG_SURFACE};
-                color: #172033;
+                color: #ffffff;
                 border-top: 2px solid {ACCENT};
             }}
             QTabBar::tab:hover:!selected {{
@@ -409,7 +409,7 @@ class LinuxExperimentsPage(QWidget):
         layout.addWidget(self.lbl_diag_summary)
 
         lbl_raw = QLabel("Raw C++ Backend Execution Output:")
-        lbl_raw.setStyleSheet("font-size: 12px; font-weight: 700; color: #172033;")
+        lbl_raw.setStyleSheet("font-size: 12px; font-weight: 700; color: #ffffff;")
         layout.addWidget(lbl_raw)
 
         self.txt_raw_output = QTextEdit()

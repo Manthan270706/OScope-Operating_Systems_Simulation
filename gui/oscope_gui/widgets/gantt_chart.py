@@ -23,6 +23,7 @@ from ..theme import (
     BG_SURFACE,
     BORDER,
     BORDER_LIGHT,
+    FONT_FAMILY,
     IDLE_BORDER_COLOR,
     IDLE_COLOR,
     IDLE_TEXT_COLOR,
@@ -109,13 +110,12 @@ class GanttChartWidget(QWidget):
 
         # Clean background surface
         painter.setPen(QPen(QColor(BORDER), 1))
-        painter.setBrush(QBrush(QColor("#FFFFFF")))
+        painter.setBrush(QBrush(QColor("#0e1422")))
         painter.drawRoundedRect(QRectF(1, 1, w - 2, h - 2), 8, 8)
 
         if not self._timeline:
             painter.setPen(QColor(TEXT_MUTED))
-            font = QFont()
-            font.setPointSize(11)
+            font = QFont(FONT_FAMILY, 11)
             painter.setFont(font)
             painter.drawText(
                 QRectF(0, 0, w, h),
@@ -143,19 +143,14 @@ class GanttChartWidget(QWidget):
 
         # Draw subtle vertical guide grid lines
         sorted_times = sorted(time_points)
-        painter.setPen(QPen(QColor("#F1F5F9"), 1, Qt.DashLine))
+        painter.setPen(QPen(QColor(BORDER), 1, Qt.DashLine))
         for t in sorted_times:
             tx = margin_x + ((t - first_start) / span) * usable_w
             painter.drawLine(int(tx), int(block_y - 4), int(tx), int(axis_y + 4))
 
         # Fonts
-        title_font = QFont()
-        title_font.setPointSize(10)
-        title_font.setBold(True)
-
-        sub_font = QFont()
-        sub_font.setPointSize(8)
-        sub_font.setBold(True)
+        title_font = QFont(FONT_FAMILY, 10, QFont.Bold)
+        sub_font = QFont(FONT_FAMILY, 8, QFont.Bold)
 
         # Render Segments
         for seg in self._timeline:
@@ -182,7 +177,7 @@ class GanttChartWidget(QWidget):
                 clip_path.addRoundedRect(rect, 4, 4)
                 painter.setClipPath(clip_path)
 
-                hatch_pen = QPen(QColor("#CBD5E1"), 1.2)
+                hatch_pen = QPen(QColor("#334155"), 1.2)
                 painter.setPen(hatch_pen)
                 step = 8
                 x_start = int(rect.left()) - int(block_h)
@@ -200,13 +195,13 @@ class GanttChartWidget(QWidget):
                 # Subtle vertical gradient for premium finish
                 gradient = QLinearGradient(rect.left(), rect.top(), rect.left(), rect.bottom())
                 if is_hovered:
-                    gradient.setColorAt(0.0, base_color.lighter(125))
-                    gradient.setColorAt(1.0, base_color.lighter(105))
-                    border_pen = QPen(QColor("#1D4ED8"), 2.0)
+                    gradient.setColorAt(0.0, base_color.lighter(135))
+                    gradient.setColorAt(1.0, base_color.lighter(110))
+                    border_pen = QPen(QColor("#ffffff"), 1.8)
                 else:
-                    gradient.setColorAt(0.0, base_color)
+                    gradient.setColorAt(0.0, base_color.lighter(115))
                     gradient.setColorAt(1.0, base_color.darker(108))
-                    border_pen = QPen(base_color.darker(115), 1)
+                    border_pen = QPen(base_color.lighter(130), 1)
 
                 painter.setPen(border_pen)
                 painter.setBrush(QBrush(gradient))
@@ -240,9 +235,7 @@ class GanttChartWidget(QWidget):
         painter.setPen(QPen(QColor(BORDER_LIGHT), 1.5))
         painter.drawLine(int(margin_x), int(axis_y + 4), int(margin_x + usable_w), int(axis_y + 4))
 
-        axis_font = QFont()
-        axis_font.setPointSize(9)
-        axis_font.setBold(True)
+        axis_font = QFont(FONT_FAMILY, 9, QFont.Bold)
         painter.setFont(axis_font)
 
         last_drawn_x = -999.0
@@ -253,7 +246,7 @@ class GanttChartWidget(QWidget):
                 painter.setPen(QPen(QColor(BORDER_LIGHT), 1.2))
                 painter.drawLine(int(tx), int(axis_y + 4), int(tx), int(axis_y + 9))
 
-                painter.setPen(QColor(TEXT_SECONDARY))
+                painter.setPen(QColor(TEXT_PRIMARY))
                 painter.drawText(
                     QRectF(tx - 20, axis_y + 11, 40, 18),
                     Qt.AlignHCenter | Qt.AlignTop,

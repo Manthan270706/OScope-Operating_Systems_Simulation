@@ -26,6 +26,7 @@ Makefile
 
 __pycache__/
 *.py[cod]
+.pytest_cache/
 .venv/
 venv/
 env/
@@ -47,6 +48,7 @@ env/
 Thumbs.db
 *.tmp
 *.temp
+~$*
 
 # =========================
 # OScope Generated Results

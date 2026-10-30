@@ -11,6 +11,7 @@ from ..theme import (
     SUCCESS,
     SUCCESS_TEXT,
     TEXT_MUTED,
+    TEXT_SECONDARY,
     WARNING,
     WARNING_TEXT,
 )
@@ -28,7 +29,7 @@ class StatusBadge(QWidget):
         super().__init__(parent)
         self.setObjectName("StatusBadge")
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(8, 3, 8, 3)
+        layout.setContentsMargins(9, 3, 9, 3)
         layout.setSpacing(6)
 
         self.dot = QLabel()
@@ -47,11 +48,11 @@ class StatusBadge(QWidget):
             self.label.setText(text)
 
         colors = {
-            "success": (SUCCESS, SUCCESS_TEXT, "#F0FDF4"),
-            "warning": (WARNING, WARNING_TEXT, "#FEF3C7"),
-            "error": (DANGER, DANGER_TEXT, "#FEE2E2"),
-            "info": ("#2563EB", "#2563EB", "#EAF2FF"),
-            "pending": ("#CBD5E1", TEXT_MUTED, "#F8FAFC"),
+            "success": (SUCCESS, SUCCESS_TEXT, "rgba(16, 185, 129, 0.15)"),
+            "warning": (WARNING, WARNING_TEXT, "rgba(245, 158, 11, 0.15)"),
+            "error": (DANGER, DANGER_TEXT, "rgba(244, 63, 94, 0.15)"),
+            "info": ("#0284c7", "#38bdf8", "rgba(56, 189, 248, 0.15)"),
+            "pending": ("#334155", TEXT_MUTED, "#131927"),
         }
 
         border_col, text_col, bg_col = colors.get(state, colors["pending"])
@@ -70,5 +71,6 @@ class StatusBadge(QWidget):
 
     def set_status(self, text: str, state: str = "success") -> None:
         """Convenience method accepting (text, state)."""
+        # Map danger -> error
         st = "error" if state == "danger" else ("info" if state == "running" else state)
         self.set_state(st, text)

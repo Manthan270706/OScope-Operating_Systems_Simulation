@@ -105,7 +105,7 @@ class CreateFileDialog(QDialog):
             }}
             QPushButton {{
                 background-color: {ACCENT};
-                color: #172033;
+                color: #ffffff;
                 font-weight: 600;
                 padding: 6px 14px;
                 border-radius: 4px;
@@ -189,7 +189,7 @@ class CreateDirectoryDialog(QDialog):
             }}
             QPushButton {{
                 background-color: {ACCENT};
-                color: #172033;
+                color: #ffffff;
                 font-weight: 600;
                 padding: 6px 14px;
                 border-radius: 4px;
@@ -376,7 +376,7 @@ class FilesystemPage(QWidget):
             f"""
             QPushButton {{
                 background-color: {ACCENT};
-                color: #172033;
+                color: #ffffff;
                 font-weight: 700;
                 font-family: {FONT_FAMILY};
                 font-size: 12px;
@@ -414,7 +414,7 @@ class FilesystemPage(QWidget):
             }}
             QPushButton:disabled {{
                 color: #64748b;
-                border-color: #E2E8F0;
+                border-color: #1e293b;
             }}
             """
         )
@@ -601,14 +601,14 @@ class FilesystemPage(QWidget):
         self.txt_log = QTextEdit()
         self.txt_log.setReadOnly(True)
         self.txt_log.setFont(QFont("Consolas", 10))
-        self.txt_log.setStyleSheet(f"background-color: #FFFFFF; border: 1px solid {BORDER}; border-radius: 4px; color: #e2e8f0; padding: 8px;")
+        self.txt_log.setStyleSheet(f"background-color: #0b0f19; border: 1px solid {BORDER}; border-radius: 4px; color: #e2e8f0; padding: 8px;")
         self.tab_widget.addTab(self.txt_log, "Operation Execution Trace")
 
         # Tab 2: Raw C++ stdout
         self.txt_raw = QTextEdit()
         self.txt_raw.setReadOnly(True)
         self.txt_raw.setFont(QFont("Consolas", 10))
-        self.txt_raw.setStyleSheet(f"background-color: #FFFFFF; border: 1px solid {BORDER}; border-radius: 4px; color: #94a3b8; padding: 8px;")
+        self.txt_raw.setStyleSheet(f"background-color: #0b0f19; border: 1px solid {BORDER}; border-radius: 4px; color: #94a3b8; padding: 8px;")
         self.tab_widget.addTab(self.txt_raw, "Raw C++ Backend Output")
 
         tabs_layout.addWidget(self.tab_widget)
@@ -626,7 +626,7 @@ class FilesystemPage(QWidget):
     def _sub_btn_style(self, color_hex: str) -> str:
         return f"""
         QPushButton {{
-            background-color: #F1F5F9;
+            background-color: #1e293b;
             color: {color_hex};
             font-size: 11px;
             font-weight: 600;
