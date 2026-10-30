@@ -2721,6 +2721,7 @@ void run_process_operations(std::istream& in, std::ostream& out, OutputFormat fo
     ProcessManager pm;
     struct ProcessTransitionRecord {
         int pid{0};
+        std::string action;
         std::string from_state;
         std::string requested_state;
         bool success{false};
@@ -2749,10 +2750,10 @@ void run_process_operations(std::istream& in, std::ostream& out, OutputFormat fo
             bool ok = pm.register_process(p);
             if (ok) {
                 logs.push_back("Created process PID " + std::to_string(pid) + " [Initial state: New, Burst: " + std::to_string(burst) + "]");
-                transitions.push_back({pid, "None", "New", true, "New", "Process registered in state New"});
+                transitions.push_back({pid, "create", "None", "New", true, "New", "Process registered in state New"});
             } else {
                 logs.push_back("Failed to create process PID " + std::to_string(pid) + " (duplicate PID or invalid burst/arrival)");
-                transitions.push_back({pid, "None", "New", false, "None", "Process registration rejected"});
+                transitions.push_back({pid, "reject", "None", "New", false, "None", "Process registration rejected"});
             }
         } else if (op == "transition" || op == "step") {
             int pid = 1;
@@ -2761,14 +2762,14 @@ void run_process_operations(std::istream& in, std::ostream& out, OutputFormat fo
             auto target = process_state_from_string(state_str);
             if (!target.has_value()) {
                 logs.push_back("Invalid target state: '" + state_str + "'");
-                transitions.push_back({pid, "Unknown", state_str, false, "Unknown", "Unknown target state name"});
+                transitions.push_back({pid, "reject", "Unknown", state_str, false, "Unknown", "Unknown target state name"});
                 continue;
             }
 
             auto curr_opt = pm.get_state(pid);
             if (!curr_opt.has_value()) {
                 logs.push_back("Transition failed: PID " + std::to_string(pid) + " not registered.");
-                transitions.push_back({pid, "Unknown", to_string(*target), false, "Unknown", "PID not registered"});
+                transitions.push_back({pid, "reject", "Unknown", to_string(*target), false, "Unknown", "PID not registered"});
                 continue;
             }
 
@@ -2778,14 +2779,23 @@ void run_process_operations(std::istream& in, std::ostream& out, OutputFormat fo
             auto new_state = pm.get_state(pid).value();
             std::string to_name = to_string(new_state);
 
+            std::string action = "transition";
+            if (from_name == "New" && target_name == "Ready") action = "admit";
+            else if (from_name == "Ready" && target_name == "Running") action = "dispatch";
+            else if (from_name == "Running" && target_name == "Ready") action = "interrupt";
+            else if (from_name == "Running" && target_name == "Waiting") action = "wait";
+            else if (from_name == "Waiting" && target_name == "Ready") action = "wakeup";
+            else if (from_name == "Running" && target_name == "Terminated") action = "exit";
+            else if (target_name == "Terminated") action = "exit";
+
             if (ok) {
                 std::string msg = "Transition " + from_name + " -> " + target_name + " succeeded";
                 logs.push_back("PID " + std::to_string(pid) + ": " + from_name + " -> " + target_name + " [SUCCESS]");
-                transitions.push_back({pid, from_name, target_name, true, to_name, msg});
+                transitions.push_back({pid, action, from_name, target_name, true, to_name, msg});
             } else {
                 std::string reason = "Illegal lifecycle transition: " + from_name + " cannot transition directly to " + target_name;
                 logs.push_back("PID " + std::to_string(pid) + ": " + from_name + " -> " + target_name + " [REJECTED: " + reason + "]");
-                transitions.push_back({pid, from_name, target_name, false, to_name, reason});
+                transitions.push_back({pid, "reject", from_name, target_name, false, to_name, reason});
             }
         } else if (op == "clear") {
             pm.clear();
@@ -2824,6 +2834,8 @@ void run_process_operations(std::istream& in, std::ostream& out, OutputFormat fo
         for (const auto& tr : transitions) {
             reporting::JsonValue t = reporting::JsonValue::object();
             t.set("pid", reporting::JsonValue::integer(tr.pid));
+            t.set("process_id", reporting::JsonValue::integer(tr.pid));
+            t.set("action", reporting::JsonValue::string(tr.action));
             t.set("from_state", reporting::JsonValue::string(tr.from_state));
             t.set("requested_state", reporting::JsonValue::string(tr.requested_state));
             t.set("success", reporting::JsonValue::boolean(tr.success));

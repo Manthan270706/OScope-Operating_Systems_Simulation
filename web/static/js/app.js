@@ -891,18 +891,36 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("pl-val-transitions").innerText = result.transitions.length;
         const tbody = document.getElementById("pl-history-tbody");
         tbody.innerHTML = result.transitions
-          .map(
-            (tr) => `
+          .map((tr) => {
+            const pid = tr.pid !== undefined ? tr.pid : (tr.process_id !== undefined ? tr.process_id : 1);
+            let action = tr.action;
+            if (!action) {
+              const from = (tr.from_state || "").toLowerCase();
+              const to = (tr.to_state || tr.requested_state || "").toLowerCase();
+              if (tr.success === false) action = "reject";
+              else if (from === "none" && to === "new") action = "create";
+              else if (from === "new" && to === "ready") action = "admit";
+              else if (from === "ready" && to === "running") action = "dispatch";
+              else if (from === "running" && to === "ready") action = "interrupt";
+              else if (from === "running" && to === "waiting") action = "wait";
+              else if (from === "waiting" && to === "ready") action = "wakeup";
+              else if (from === "running" && to === "terminated") action = "exit";
+              else if (to === "terminated") action = "exit";
+              else action = "transition";
+            }
+            const isSuccess = tr.success !== false;
+            const targetColor = isSuccess ? "var(--success)" : "var(--danger)";
+            return `
           <tr>
-            <td style="font-family: ui-monospace, monospace; font-weight: 700; color: var(--primary);">P${tr.process_id}</td>
-            <td style="font-family: ui-monospace, monospace;">${tr.action}</td>
+            <td style="font-family: ui-monospace, monospace; font-weight: 700; color: var(--primary);">P${pid}</td>
+            <td><span class="module-tag" style="font-family: ui-monospace, monospace; font-weight: 600; text-transform: uppercase;">${action}</span></td>
             <td><span class="module-tag">${tr.from_state}</span></td>
             <td style="color: var(--text-muted); font-size: 14px;">→</td>
-            <td><span class="module-tag" style="color: var(--success); font-weight: 700;">${tr.to_state}</span></td>
+            <td><span class="module-tag" style="color: ${targetColor}; font-weight: 700;">${tr.to_state}</span></td>
             <td style="color: var(--text-secondary);">${tr.details || tr.message || 'State Transition'}</td>
           </tr>
-        `
-          )
+        `;
+          })
           .join("");
       }
 

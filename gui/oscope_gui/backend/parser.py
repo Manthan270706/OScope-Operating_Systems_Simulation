@@ -2335,14 +2335,18 @@ def parse_process_lifecycle_output(stdout: str) -> ProcessLifecycleSimulationRes
                     req_st = t_raw.get("requested_state") or t_raw.get("to_state") or "None"
                     res_st = t_raw.get("resulting_state") or t_raw.get("to_state") or "None"
                     msg = t_raw.get("message") or t_raw.get("detail") or ""
+                    pid_val = int(t_raw.get("pid", t_raw.get("process_id", 1)))
+                    act_val = str(t_raw.get("action", ""))
                     res_model.transitions.append(
                         ProcessTransitionModel(
-                            pid=int(t_raw.get("pid", 1)),
+                            pid=pid_val,
                             from_state=str(t_raw.get("from_state", "None")),
                             requested_state=str(req_st),
                             success=bool(t_raw.get("success", False)),
                             to_state=str(res_st),
                             message=str(msg),
+                            action=act_val,
+                            process_id=pid_val,
                         )
                     )
 

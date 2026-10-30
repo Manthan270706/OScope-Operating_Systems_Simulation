@@ -56,6 +56,37 @@ class ProcessTransitionModel:
     success: bool
     to_state: str
     message: str = ""
+    action: str = ""
+    process_id: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        if self.process_id is None:
+            self.process_id = self.pid
+        if not self.action:
+            self.action = self._derive_action()
+
+    def _derive_action(self) -> str:
+        if not self.success:
+            return "reject"
+        f = (self.from_state or "").lower()
+        t = (self.to_state or self.requested_state or "").lower()
+        if f == "none" and t == "new":
+            return "create"
+        if f == "new" and t == "ready":
+            return "admit"
+        if f == "ready" and t == "running":
+            return "dispatch"
+        if f == "running" and t == "ready":
+            return "interrupt"
+        if f == "running" and t == "waiting":
+            return "wait"
+        if f == "waiting" and t == "ready":
+            return "wakeup"
+        if f == "running" and t == "terminated":
+            return "exit"
+        if t == "terminated":
+            return "exit"
+        return "transition"
 
     @property
     def detail(self) -> str:
