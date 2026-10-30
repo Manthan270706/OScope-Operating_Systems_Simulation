@@ -48,6 +48,7 @@ env/
 Thumbs.db
 *.tmp
 *.temp
+~$*
 
 # =========================
 # OScope Generated Results
