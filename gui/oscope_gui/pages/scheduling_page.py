@@ -132,7 +132,7 @@ class SchedulingPage(QWidget):
         layout.setSpacing(3)
 
         title = QLabel("CPU Scheduling Simulation")
-        title.setStyleSheet("font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px;")
+        title.setStyleSheet("font-size: 22px; font-weight: 800; color: #172033; letter-spacing: -0.3px;")
 
         subtitle = QLabel(
             "Configure workload processes, choose a scheduling algorithm, and observe how the operating system allocates CPU time."
@@ -165,7 +165,7 @@ class SchedulingPage(QWidget):
         top_row.setSpacing(14)
 
         lbl_algo = QLabel("Algorithm:")
-        lbl_algo.setStyleSheet("font-weight: 600; font-size: 13px; color: #ffffff;")
+        lbl_algo.setStyleSheet("font-weight: 600; font-size: 13px; color: #172033;")
 
         self.algo_combo = QComboBox()
         self.algo_combo.setMinimumWidth(270)
@@ -209,7 +209,7 @@ class SchedulingPage(QWidget):
         rr_layout.setSpacing(8)
 
         lbl_rr = QLabel("Time Quantum:")
-        lbl_rr.setStyleSheet("font-weight: 600; color: #ffffff;")
+        lbl_rr.setStyleSheet("font-weight: 600; color: #172033;")
         self.spin_rr = QSpinBox()
         self.spin_rr.setRange(1, 100)
         self.spin_rr.setValue(2)
@@ -231,7 +231,7 @@ class SchedulingPage(QWidget):
         mlfq_layout.setSpacing(8)
 
         lbl_mlfq = QLabel("MLFQ Time Slices:")
-        lbl_mlfq.setStyleSheet("font-weight: 600; color: #ffffff;")
+        lbl_mlfq.setStyleSheet("font-weight: 600; color: #172033;")
 
         self.spin_q0 = QSpinBox()
         self.spin_q0.setRange(1, 100)
@@ -291,7 +291,7 @@ class SchedulingPage(QWidget):
         # Title & Toggle
         header_row = QHBoxLayout()
         title = QLabel("Understanding the Inputs")
-        title.setStyleSheet("font-weight: 700; font-size: 13px; color: #ffffff;")
+        title.setStyleSheet("font-weight: 700; font-size: 13px; color: #172033;")
         hint = QLabel("Define the processes that will compete for CPU time. Each row represents one process.")
         hint.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px;")
 
@@ -342,7 +342,7 @@ class SchedulingPage(QWidget):
         # Illustrative Example banner
         example_box = QFrame()
         example_box.setStyleSheet(
-            f"background-color: #0e1422; border: 1px solid {BORDER}; border-radius: 6px; padding: 8px 12px;"
+            f"background-color: #F8FAFC; border: 1px solid {BORDER}; border-radius: 6px; padding: 8px 12px;"
         )
         ex_layout = QHBoxLayout(example_box)
         ex_layout.setContentsMargins(8, 4, 8, 4)
@@ -383,7 +383,7 @@ class SchedulingPage(QWidget):
         # Toolbar
         toolbar = QHBoxLayout()
         title = QLabel("Process Workload Configuration")
-        title.setStyleSheet("font-weight: 700; font-size: 13px; color: #ffffff;")
+        title.setStyleSheet("font-weight: 700; font-size: 13px; color: #172033;")
         toolbar.addWidget(title)
         toolbar.addStretch()
 
@@ -474,7 +474,7 @@ class SchedulingPage(QWidget):
             f"""
             QPushButton {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {ACCENT}, stop:1 {ACCENT_INDIGO});
-                color: #ffffff;
+                color: #172033;
                 font-weight: 700;
                 font-size: 13px;
                 border-radius: 6px;
@@ -511,7 +511,7 @@ class SchedulingPage(QWidget):
         # Section Heading
         res_header = QHBoxLayout()
         title = QLabel("Simulation Results & Analysis")
-        title.setStyleSheet("font-size: 17px; font-weight: 800; color: #ffffff;")
+        title.setStyleSheet("font-size: 17px; font-weight: 800; color: #172033;")
         res_header.addWidget(title)
         res_header.addStretch()
         layout.addLayout(res_header)
@@ -574,7 +574,7 @@ class SchedulingPage(QWidget):
 
         g_header = QHBoxLayout()
         g_title = QLabel("CPU Execution Timeline (Gantt Chart)")
-        g_title.setStyleSheet("font-weight: 700; font-size: 13px; color: #ffffff;")
+        g_title.setStyleSheet("font-weight: 700; font-size: 13px; color: #172033;")
         g_hint = QLabel("A timeline showing which process holds the CPU during each interval.")
         g_hint.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px;")
 

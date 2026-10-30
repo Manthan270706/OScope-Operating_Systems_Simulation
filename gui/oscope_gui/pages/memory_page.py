@@ -137,7 +137,7 @@ class MemoryAllocationPage(QWidget):
         layout.setSpacing(3)
 
         title = QLabel("Memory Allocation Simulator")
-        title.setStyleSheet("font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px;")
+        title.setStyleSheet("font-size: 22px; font-weight: 800; color: #172033; letter-spacing: -0.3px;")
 
         subtitle = QLabel("Explore how operating systems assign memory to processes and manage available space.")
         subtitle.setStyleSheet(f"font-size: 13px; color: {TEXT_SECONDARY};")
@@ -168,7 +168,7 @@ class MemoryAllocationPage(QWidget):
         top_row.setSpacing(14)
 
         lbl_strat = QLabel("Allocation Strategy:")
-        lbl_strat.setStyleSheet("font-weight: 600; font-size: 13px; color: #ffffff;")
+        lbl_strat.setStyleSheet("font-weight: 600; font-size: 13px; color: #172033;")
 
         self.strategy_combo = QComboBox()
         self.strategy_combo.setMinimumWidth(240)
@@ -203,7 +203,7 @@ class MemoryAllocationPage(QWidget):
         mem_row.setSpacing(10)
 
         lbl_total = QLabel("Total Memory Pool:")
-        lbl_total.setStyleSheet("font-weight: 600; color: #ffffff;")
+        lbl_total.setStyleSheet("font-weight: 600; color: #172033;")
 
         self.spin_total_memory = QSpinBox()
         self.spin_total_memory.setRange(64, 10000000)
@@ -247,7 +247,7 @@ class MemoryAllocationPage(QWidget):
 
         header_row = QHBoxLayout()
         title = QLabel("Understanding Memory Allocation")
-        title.setStyleSheet("font-weight: 700; font-size: 13px; color: #ffffff;")
+        title.setStyleSheet("font-weight: 700; font-size: 13px; color: #172033;")
         hint = QLabel("Dynamic memory partition concepts implemented by the OScope memory manager.")
         hint.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px;")
 
@@ -298,7 +298,7 @@ class MemoryAllocationPage(QWidget):
         # Example workload banner
         example_box = QFrame()
         example_box.setStyleSheet(
-            f"background-color: #0e1422; border: 1px solid {BORDER}; border-radius: 6px; padding: 8px 12px;"
+            f"background-color: #F8FAFC; border: 1px solid {BORDER}; border-radius: 6px; padding: 8px 12px;"
         )
         ex_layout = QHBoxLayout(example_box)
         ex_layout.setContentsMargins(8, 4, 8, 4)
@@ -338,7 +338,7 @@ class MemoryAllocationPage(QWidget):
         # Toolbar
         toolbar = QHBoxLayout()
         title = QLabel("Memory Workload Operations")
-        title.setStyleSheet("font-weight: 700; font-size: 13px; color: #ffffff;")
+        title.setStyleSheet("font-weight: 700; font-size: 13px; color: #172033;")
         toolbar.addWidget(title)
         toolbar.addStretch()
 
@@ -439,7 +439,7 @@ class MemoryAllocationPage(QWidget):
             f"""
             QPushButton {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {ACCENT}, stop:1 {ACCENT_INDIGO});
-                color: #ffffff;
+                color: #172033;
                 font-weight: 700;
                 font-size: 13px;
                 border-radius: 6px;
@@ -476,7 +476,7 @@ class MemoryAllocationPage(QWidget):
         # Section Heading
         res_header = QHBoxLayout()
         title = QLabel("Memory Simulation Results & Layout")
-        title.setStyleSheet("font-size: 17px; font-weight: 800; color: #ffffff;")
+        title.setStyleSheet("font-size: 17px; font-weight: 800; color: #172033;")
         res_header.addWidget(title)
         res_header.addStretch()
         layout.addLayout(res_header)
@@ -539,7 +539,7 @@ class MemoryAllocationPage(QWidget):
 
         m_header = QHBoxLayout()
         m_title = QLabel("Contiguous Memory Pool Layout")
-        m_title.setStyleSheet("font-weight: 700; font-size: 13px; color: #ffffff;")
+        m_title.setStyleSheet("font-weight: 700; font-size: 13px; color: #172033;")
         m_hint = QLabel("A visual map representing allocated partitions (Cyan) and free blocks (Emerald).")
         m_hint.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px;")
 

@@ -252,7 +252,9 @@ class DiskHeadPlotCanvas(QWidget):
 
         # Canvas background with rounded corners
         bg_rect = QRectF(0, 0, w, h)
-        painter.fillRect(bg_rect, QColor(BG_CANVAS))
+        painter.fillRect(bg_rect, QColor("#FFFFFF"))
+        painter.setPen(QPen(QColor(BORDER), 1))
+        painter.drawRoundedRect(QRectF(1, 1, w - 2, h - 2), 8, 8)
 
         if not self.result or not self.result.head_path:
             self._paint_empty_state(painter)
@@ -334,15 +336,14 @@ class DiskHeadPlotCanvas(QWidget):
         painter.setFont(QFont(FONT_FAMILY, 9))
         for t in ticks:
             tx = to_x(t)
-            painter.setPen(QPen(QColor(255, 255, 255, 18), 1, Qt.DotLine))
+            painter.setPen(QPen(QColor("#E2E8F0"), 1, Qt.DotLine))
             painter.drawLine(QPointF(tx, top_m - 10), QPointF(tx, top_m + plot_h + 8))
 
             # Bottom cylinder label
-            painter.setPen(QColor(TEXT_SECONDARY))
             is_boundary = t in (self.min_cyl, self.max_cyl)
             if is_boundary:
                 painter.setFont(QFont(FONT_FAMILY, 9, QFont.Bold))
-                painter.setPen(QColor(ACCENT_VIOLET))
+                painter.setPen(QColor(ACCENT))
             else:
                 painter.setFont(QFont(FONT_FAMILY, 9))
                 painter.setPen(QColor(TEXT_MUTED))

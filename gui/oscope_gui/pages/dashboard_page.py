@@ -3,7 +3,8 @@
 from datetime import datetime
 from typing import Callable, Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -12,6 +13,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -19,18 +21,15 @@ from PySide6.QtWidgets import (
 )
 
 from ..backend.runner import BaseBackendRunner
+from ..icons import render_svg_icon, render_svg_pixmap
 from ..theme import (
     ACCENT,
-    ACCENT_AMBER,
-    ACCENT_CYAN,
-    ACCENT_EMERALD,
     ACCENT_HOVER,
-    ACCENT_INDIGO,
-    ACCENT_ROSE,
-    ACCENT_VIOLET,
+    ACCENT_LIGHT,
+    ACCENT_LIGHT_HOVER,
     BG_APP,
+    BG_DARK,
     BG_ELEVATED,
-    BG_INPUT,
     BG_SURFACE,
     BORDER,
     BORDER_LIGHT,
@@ -39,6 +38,80 @@ from ..theme import (
     TEXT_SECONDARY,
 )
 from ..widgets.status_badge import StatusBadge
+
+
+class MiniGanttPreviewWidget(QWidget):
+    """Clean miniature preview Gantt chart for the hero CPU Scheduling card."""
+
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self.setFixedSize(220, 110)
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        w = float(self.width())
+        h = float(self.height())
+
+        # Card container with subtle border
+        painter.setPen(QPen(QColor(BORDER), 1))
+        painter.setBrush(QBrush(QColor("#FFFFFF")))
+        painter.drawRoundedRect(QRectF(1, 1, w - 2, h - 2), 6, 6)
+
+        margin_left = 32.0
+        margin_right = 14.0
+        margin_top = 10.0
+        margin_bottom = 22.0
+
+        chart_w = w - margin_left - margin_right
+        chart_h = h - margin_top - margin_bottom
+
+        # Process rows: P1, P2, P3, P4
+        labels = ["P1", "P2", "P3", "P4"]
+        n_rows = len(labels)
+        row_h = chart_h / n_rows
+
+        font = QFont("Segoe UI", 7, QFont.Bold)
+        painter.setFont(font)
+
+        # Draw row labels and subtle horizontal guide lines
+        for i, lbl in enumerate(labels):
+            y = margin_top + i * row_h
+            painter.setPen(QColor(TEXT_MUTED))
+            painter.drawText(QRectF(4, y, margin_left - 8, row_h), Qt.AlignRight | Qt.AlignVCenter, lbl)
+
+            # Subtle horizontal rule
+            painter.setPen(QPen(QColor("#F1F5F9"), 1))
+            painter.drawLine(int(margin_left), int(y + row_h), int(w - margin_right), int(y + row_h))
+
+        # Sample preview execution slices (start, end, row, color)
+        slices = [
+            (0, 12, 0, "#3B82F6"),
+            (12, 22, 1, "#60A5FA"),
+            (22, 38, 2, "#2563EB"),
+            (38, 52, 3, "#93C5FD"),
+        ]
+        total_time = 54.0
+
+        for start, end, row_idx, col_hex in slices:
+            x0 = margin_left + (start / total_time) * chart_w
+            x1 = margin_left + (end / total_time) * chart_w
+            y0 = margin_top + row_idx * row_h + 3.0
+            bh = row_h - 6.0
+
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QBrush(QColor(col_hex)))
+            painter.drawRoundedRect(QRectF(x0, y0, max(4.0, x1 - x0), bh), 3, 3)
+
+        # Bottom time axis ticks: 0, 10, 20, 30, 40, 50
+        axis_font = QFont("Segoe UI", 6)
+        painter.setFont(axis_font)
+        painter.setPen(QColor(TEXT_MUTED))
+        for t in [0, 10, 20, 30, 40, 50]:
+            tx = margin_left + (t / total_time) * chart_w
+            painter.drawLine(int(tx), int(h - margin_bottom + 1), int(tx), int(h - margin_bottom + 4))
+            painter.drawText(QRectF(tx - 10, h - margin_bottom + 5, 20, 12), Qt.AlignCenter, str(t))
 
 
 class DashboardPage(QWidget):
@@ -75,7 +148,7 @@ class DashboardPage(QWidget):
         title_box.setSpacing(3)
 
         title = QLabel("OScope Simulation Platform")
-        title.setStyleSheet("font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px;")
+        title.setStyleSheet(f"font-size: 22px; font-weight: 800; color: {TEXT_PRIMARY}; letter-spacing: -0.3px;")
 
         subtitle = QLabel("Interactive Operating Systems Simulation & Experimentation Laboratory")
         subtitle.setStyleSheet(f"font-size: 13px; color: {TEXT_SECONDARY};")
@@ -85,13 +158,28 @@ class DashboardPage(QWidget):
         header_layout.addLayout(title_box)
         header_layout.addStretch()
 
-        # Compact user-facing readiness badge & retry
-        self.status_badge = StatusBadge("Checking...", "pending")
+        # Engine status pill & actions
+        self.status_badge = StatusBadge("Engine status: Available", "success")
         self.btn_retry = QPushButton("Check Status")
-        self.btn_retry.setFixedWidth(110)
-        self.btn_retry.setStyleSheet(f"font-size: 12px; padding: 5px 10px; background-color: {BG_ELEVATED};")
+        self.btn_retry.setFixedHeight(30)
+        self.btn_retry.setStyleSheet(
+            f"""
+            QPushButton {{
+                font-size: 12px;
+                padding: 4px 12px;
+                background-color: {BG_SURFACE};
+                color: {TEXT_PRIMARY};
+                border: 1px solid {BORDER_LIGHT};
+                border-radius: 6px;
+                font-weight: 500;
+            }}
+            QPushButton:hover {{
+                background-color: {BG_DARK};
+                border-color: {TEXT_MUTED};
+            }}
+            """
+        )
         self.btn_retry.clicked.connect(self.refresh_backend_status)
-        self.btn_retry.hide()
 
         header_layout.addWidget(self.status_badge)
         header_layout.addWidget(self.btn_retry)
@@ -104,7 +192,7 @@ class DashboardPage(QWidget):
         # 3. Experiment Modules Grid
         modules_header = QHBoxLayout()
         modules_title = QLabel("Experiment Modules")
-        modules_title.setStyleSheet("font-size: 16px; font-weight: 700; color: #ffffff;")
+        modules_title.setStyleSheet(f"font-size: 16px; font-weight: 700; color: {TEXT_PRIMARY};")
         modules_header.addWidget(modules_title)
         modules_header.addStretch()
         content_layout.addLayout(modules_header)
@@ -115,7 +203,7 @@ class DashboardPage(QWidget):
         # 4. Recent Session Executions Section
         history_header = QHBoxLayout()
         history_title = QLabel("Recent Session Executions")
-        history_title.setStyleSheet("font-size: 16px; font-weight: 700; color: #ffffff;")
+        history_title.setStyleSheet(f"font-size: 16px; font-weight: 700; color: {TEXT_PRIMARY};")
         history_header.addWidget(history_title)
         history_header.addStretch()
         content_layout.addLayout(history_header)
@@ -123,14 +211,48 @@ class DashboardPage(QWidget):
         self.history_table = self._build_history_table()
         content_layout.addWidget(self.history_table)
 
-        self.empty_history_label = QLabel(
-            "No simulations executed yet in this session. Head to CPU Scheduling to run your first experiment."
+        # Clean empty state box matching reference design
+        self.empty_history_container = QFrame()
+        self.empty_history_container.setStyleSheet(
+            f"""
+            QFrame {{
+                background-color: {BG_SURFACE};
+                border: 1px solid {BORDER};
+                border-radius: 8px;
+                padding: 16px;
+            }}
+            """
         )
-        self.empty_history_label.setStyleSheet(
-            f"color: {TEXT_MUTED}; font-size: 12px; padding: 22px; border: 1px dashed {BORDER}; border-radius: 8px; background-color: {BG_SURFACE};"
-        )
-        self.empty_history_label.setAlignment(Qt.AlignCenter)
-        content_layout.addWidget(self.empty_history_label)
+        empty_layout = QHBoxLayout(self.empty_history_container)
+        empty_layout.setContentsMargins(20, 16, 20, 16)
+        empty_layout.setSpacing(14)
+
+        icon_doc = QLabel()
+        icon_doc.setPixmap(render_svg_pixmap("paging", "#94A3B8", 28))
+        icon_doc.setFixedSize(36, 36)
+        icon_doc.setAlignment(Qt.AlignCenter)
+
+        empty_text_layout = QVBoxLayout()
+        empty_text_layout.setSpacing(2)
+
+        lbl_empty_title = QLabel("No simulations executed yet")
+        lbl_empty_title.setStyleSheet(f"font-size: 13px; font-weight: 600; color: {TEXT_PRIMARY};")
+
+        lbl_empty_sub = QLabel("Run an experiment from the modules above to see your recent sessions here.")
+        lbl_empty_sub.setStyleSheet(f"font-size: 12px; color: {TEXT_SECONDARY};")
+
+        empty_text_layout.addWidget(lbl_empty_title)
+        empty_text_layout.addWidget(lbl_empty_sub)
+
+        empty_layout.addStretch()
+        empty_layout.addWidget(icon_doc)
+        empty_layout.addLayout(empty_text_layout)
+        empty_layout.addStretch()
+
+        content_layout.addWidget(self.empty_history_container)
+
+        # Legacy alias so existing tests pass cleanly
+        self.empty_history_label = self.empty_history_container
 
         scroll.setWidget(content)
         main_layout.addWidget(scroll)
@@ -145,9 +267,8 @@ class DashboardPage(QWidget):
         card.setStyleSheet(
             f"""
             QFrame#HeroCard {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #151d30, stop:1 #0f1523);
+                background-color: {BG_SURFACE};
                 border: 1px solid {BORDER};
-                border-left: 4px solid {ACCENT_HOVER};
                 border-radius: 8px;
             }}
             QFrame#HeroCard:hover {{
@@ -156,8 +277,16 @@ class DashboardPage(QWidget):
             """
         )
         layout = QHBoxLayout(card)
-        layout.setContentsMargins(22, 18, 22, 18)
-        layout.setSpacing(24)
+        layout.setContentsMargins(20, 18, 20, 18)
+        layout.setSpacing(20)
+
+        # Icon Container: 44x44, background #EAF2FF, rounded 8px
+        icon_box = QLabel()
+        icon_box.setFixedSize(44, 44)
+        icon_box.setAlignment(Qt.AlignCenter)
+        icon_box.setStyleSheet(f"background-color: {ACCENT_LIGHT}; border-radius: 8px;")
+        icon_box.setPixmap(render_svg_pixmap("cpu", ACCENT, 24))
+        layout.addWidget(icon_box, alignment=Qt.AlignTop)
 
         text_layout = QVBoxLayout()
         text_layout.setSpacing(8)
@@ -165,7 +294,7 @@ class DashboardPage(QWidget):
         title_row = QHBoxLayout()
         title_row.setSpacing(10)
         title = QLabel("CPU Scheduling Simulator")
-        title.setStyleSheet("font-size: 18px; font-weight: 700; color: #ffffff;")
+        title.setStyleSheet(f"font-size: 17px; font-weight: 700; color: {TEXT_PRIMARY};")
         badge = StatusBadge("Available", "success")
         title_row.addWidget(title)
         title_row.addWidget(badge)
@@ -178,22 +307,22 @@ class DashboardPage(QWidget):
         desc.setWordWrap(True)
         desc.setStyleSheet(f"font-size: 13px; color: {TEXT_SECONDARY}; line-height: 1.45;")
 
-        # Tags row for supported algorithms with distinct tasteful accents
+        # Tags row with restrained, uniform light-blue badges matching reference design
         tags_row = QHBoxLayout()
-        tags_row.setSpacing(6)
-        supported_algos = [
-            ("FCFS", ACCENT_HOVER, "rgba(14, 165, 233, 0.12)"),
-            ("SJF", ACCENT_EMERALD, "rgba(16, 185, 129, 0.12)"),
-            ("SRTF", ACCENT_CYAN, "rgba(6, 182, 212, 0.12)"),
-            ("Priority", ACCENT_VIOLET, "rgba(139, 92, 246, 0.12)"),
-            ("Round Robin", ACCENT_AMBER, "rgba(245, 158, 11, 0.12)"),
-            ("MLFQ", ACCENT_ROSE, "rgba(244, 63, 94, 0.12)"),
-            ("Compare All", ACCENT_INDIGO, "rgba(99, 102, 241, 0.12)"),
-        ]
-        for name, text_col, bg_col in supported_algos:
+        tags_row.setSpacing(8)
+        supported_algos = ["FCFS", "SJF", "SRTF", "Priority", "Round Robin", "MLFQ"]
+        for name in supported_algos:
             tag = QLabel(name)
             tag.setStyleSheet(
-                f"background-color: {bg_col}; color: {text_col}; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.08);"
+                f"""
+                background-color: {ACCENT_LIGHT};
+                color: {ACCENT};
+                font-size: 11px;
+                font-weight: 600;
+                padding: 4px 10px;
+                border-radius: 6px;
+                border: 1px solid #DBEAFE;
+                """
             )
             tags_row.addWidget(tag)
         tags_row.addStretch()
@@ -201,31 +330,34 @@ class DashboardPage(QWidget):
         text_layout.addLayout(title_row)
         text_layout.addWidget(desc)
         text_layout.addLayout(tags_row)
+        layout.addLayout(text_layout, stretch=1)
 
-        # Prominent launch action
-        btn_launch = QPushButton("Open CPU Scheduling")
+        # Mini Gantt Preview Widget
+        mini_gantt = MiniGanttPreviewWidget()
+        layout.addWidget(mini_gantt)
+
+        # Prominent primary blue launch button
+        btn_launch = QPushButton("Open CPU Scheduling →")
         btn_launch.setProperty("class", "btn-primary")
-        btn_launch.setFixedWidth(200)
+        btn_launch.setFixedWidth(190)
         btn_launch.setFixedHeight(40)
         btn_launch.setStyleSheet(
             f"""
             QPushButton {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {ACCENT}, stop:1 {ACCENT_INDIGO});
-                color: #ffffff;
+                background-color: {ACCENT};
+                color: #172033;
                 font-weight: 600;
                 font-size: 13px;
                 border-radius: 6px;
-                border: 1px solid rgba(56, 189, 248, 0.4);
+                border: 1px solid {ACCENT};
             }}
             QPushButton:hover {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {ACCENT_HOVER}, stop:1 #818cf8);
-                border-color: #7dd3fc;
+                background-color: {ACCENT_HOVER};
+                border-color: {ACCENT_HOVER};
             }}
             """
         )
         btn_launch.clicked.connect(lambda: self.navigate_to_page("scheduling"))
-
-        layout.addLayout(text_layout, stretch=1)
         layout.addWidget(btn_launch)
 
         return card
@@ -241,7 +373,7 @@ class DashboardPage(QWidget):
                 "success",
                 "Preemptive and non-preemptive algorithms with timeline visualization and performance metrics.",
                 True,
-                ACCENT_HOVER,
+                "cpu",
                 "scheduling",
             ),
             (
@@ -250,7 +382,7 @@ class DashboardPage(QWidget):
                 "success",
                 "Dynamic memory partitioning and fragmentation analysis with First-Fit, Best-Fit, and Worst-Fit.",
                 True,
-                ACCENT_EMERALD,
+                "memory",
                 "memory",
             ),
             (
@@ -259,26 +391,25 @@ class DashboardPage(QWidget):
                 "success",
                 "Virtual memory page fault simulation comparing FIFO, LRU, and Belady's Optimal algorithms.",
                 True,
-                ACCENT_VIOLET,
+                "paging",
                 "paging",
             ),
-
             (
                 "Deadlock Management",
                 "Available",
                 "success",
                 "Banker's safety verification, resource-request simulation, and deadlock detection with graph flow.",
                 True,
-                ACCENT_ROSE,
+                "deadlock",
                 "deadlock",
             ),
             (
                 "Disk Scheduling",
                 "Available",
                 "success",
-                "Secondary storage seek optimization comparing FCFS, SSTF, SCAN, C-SCAN, LOOK, C-LOOK, and LIFO.",
+                "Seek optimization comparing FCFS, SSTF, SCAN, C-SCAN, LOOK, C-LOOK, and LIFO.",
                 True,
-                ACCENT_AMBER,
+                "disk",
                 "disk",
             ),
             (
@@ -287,25 +418,25 @@ class DashboardPage(QWidget):
                 "success",
                 "Process lifecycle, thread synchronization, producer-consumer, and POSIX IPC channels.",
                 True,
-                ACCENT_INDIGO,
+                "linux",
                 "linux",
             ),
             (
                 "Host Resource Monitoring",
                 "Available",
                 "success",
-                "Real-time Linux host telemetry from /proc/stat, /proc/meminfo, /proc/loadavg, and statvfs.",
+                "Real-time Linux host telemetry from /proc and /sys (CPU, memory, disk, process stats).",
                 True,
-                ACCENT_CYAN,
+                "monitor",
                 "monitor",
             ),
             (
                 "Simulated File System",
                 "Available",
                 "success",
-                "In-memory educational file system: contiguous, linked, indexed block allocations, directory trees, and bitmap.",
+                "In-memory educational file system: contiguous, linked, indexed block allocations, directory trees.",
                 True,
-                ACCENT_EMERALD,
+                "filesystem",
                 "filesystem",
             ),
             (
@@ -314,22 +445,21 @@ class DashboardPage(QWidget):
                 "success",
                 "MMU bit decomposition, multi-level page tables, demand paging page faults, and thrashing curves.",
                 True,
-                ACCENT_CYAN,
+                "translation",
                 "translation",
             ),
             (
                 "Process Lifecycle State Machine",
                 "Available",
                 "success",
-                "Discrete 5-state process lifecycle (New, Ready, Running, Waiting, Terminated) and C++ transition validation.",
+                "Visualize process states (New, Ready, Running, Waiting, Terminated) with state transitions.",
                 True,
-                ACCENT_VIOLET,
+                "lifecycle",
                 "lifecycle",
             ),
         ]
 
-
-        for i, (name, status_text, status_state, desc_text, is_active, accent_color, page_key) in enumerate(modules):
+        for i, (name, status_text, status_state, desc_text, is_active, icon_name, page_key) in enumerate(modules):
             card = QFrame()
             card.setObjectName("ModuleCard")
             card.setProperty("card", True)
@@ -338,40 +468,62 @@ class DashboardPage(QWidget):
                 QFrame#ModuleCard {{
                     background-color: {BG_SURFACE};
                     border: 1px solid {BORDER};
-                    border-top: 3px solid {accent_color};
                     border-radius: 8px;
                 }}
                 QFrame#ModuleCard:hover {{
                     border-color: {BORDER_LIGHT};
-                    background-color: {BG_ELEVATED};
                 }}
                 """
             )
             c_layout = QVBoxLayout(card)
-            c_layout.setContentsMargins(16, 14, 16, 14)
-            c_layout.setSpacing(8)
+            c_layout.setContentsMargins(16, 16, 16, 16)
+            c_layout.setSpacing(10)
 
+            # Top row: Icon container + Title + Status badge
             top_row = QHBoxLayout()
+            top_row.setSpacing(10)
+
+            icon_box = QLabel()
+            icon_box.setFixedSize(38, 38)
+            icon_box.setAlignment(Qt.AlignCenter)
+            icon_box.setStyleSheet(f"background-color: {ACCENT_LIGHT}; border-radius: 8px;")
+            icon_box.setPixmap(render_svg_pixmap(icon_name, ACCENT, 20))
+            top_row.addWidget(icon_box)
+
             lbl_name = QLabel(name)
-            lbl_name.setStyleSheet("font-size: 14px; font-weight: 700; color: #ffffff;")
-            badge = StatusBadge(status_text, status_state)
+            lbl_name.setStyleSheet(f"font-size: 14px; font-weight: 700; color: {TEXT_PRIMARY};")
             top_row.addWidget(lbl_name)
             top_row.addStretch()
+
+            badge = StatusBadge(status_text, status_state)
             top_row.addWidget(badge)
             c_layout.addLayout(top_row)
 
             lbl_desc = QLabel(desc_text)
             lbl_desc.setWordWrap(True)
-            lbl_desc.setStyleSheet(f"font-size: 12px; color: {TEXT_SECONDARY}; line-height: 1.35;")
+            lbl_desc.setStyleSheet(f"font-size: 12px; color: {TEXT_SECONDARY}; line-height: 1.4;")
             c_layout.addWidget(lbl_desc)
 
             c_layout.addStretch()
 
             if is_active:
                 btn_action = QPushButton("Launch Experiment →")
-                btn_action.setFixedHeight(28)
+                btn_action.setFixedHeight(32)
                 btn_action.setStyleSheet(
-                    f"background-color: {BG_ELEVATED}; color: {accent_color}; font-size: 12px; font-weight: 600; border: 1px solid {BORDER_LIGHT};"
+                    f"""
+                    QPushButton {{
+                        background-color: {ACCENT_LIGHT};
+                        color: {ACCENT};
+                        font-size: 12px;
+                        font-weight: 600;
+                        border: 1px solid #DBEAFE;
+                        border-radius: 6px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: {ACCENT_LIGHT_HOVER};
+                        border-color: #BFDBFE;
+                    }}
+                    """
                 )
                 btn_action.clicked.connect(lambda _, key=page_key: self.navigate_to_page(key))
                 if page_key == "disk":
@@ -428,7 +580,7 @@ class DashboardPage(QWidget):
         success: bool = True,
     ) -> None:
         """Record real session simulation executions in the history table."""
-        self.empty_history_label.hide()
+        self.empty_history_container.hide()
         self.history_table.show()
 
         row = self.history_table.rowCount()
@@ -448,15 +600,15 @@ class DashboardPage(QWidget):
         for col, it in enumerate(items):
             it.setTextAlignment(Qt.AlignCenter)
             if col == 5:
-                it.setForeground(Qt.green if success else Qt.red)
+                it.setForeground(QColor("#16A34A") if success else QColor("#DC2626"))
             self.history_table.setItem(row, col, it)
 
     def refresh_backend_status(self) -> None:
         """Poll the backend runner and update user-facing readiness pill."""
         info = self.runner.get_info()
         if info.is_available:
-            self.status_badge.set_state("success", "Ready to run experiments")
-            self.btn_retry.hide()
+            self.status_badge.set_state("success", "Engine status: Available")
+            self.btn_retry.show()
         else:
-            self.status_badge.set_state("error", "Experiment engine unavailable")
+            self.status_badge.set_state("error", "Engine status: Unavailable")
             self.btn_retry.show()

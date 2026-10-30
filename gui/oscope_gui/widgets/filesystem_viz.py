@@ -30,6 +30,7 @@ from ..models.filesystem import (
     FilesystemStatusModel,
 )
 from ..theme import (
+    ACCENT,
     ACCENT_AMBER,
     ACCENT_CYAN,
     ACCENT_EMERALD,
@@ -195,37 +196,29 @@ class BlockAllocationMapWidget(QWidget):
 
             # Determine colors
             if not is_allocated:
-                fill_color = QColor("#1e293b")
-                border_color = QColor("#334155")
-                text_color = QColor("#64748b")
+                fill_color = QColor("#F8FAFC")
+                border_color = QColor(BORDER)
+                text_color = QColor(TEXT_MUTED)
             else:
                 strat_info = block_owner.get(i, ("Indexed", False, ""))
-                strat = strat_info[0].lower()
                 is_index = strat_info[1]
 
                 if is_index:
-                    fill_color = QColor("#581c87")  # Purple for index block
-                    border_color = QColor(ACCENT_VIOLET)
-                    text_color = QColor("#e9d5ff")
-                elif "contig" in strat:
-                    fill_color = QColor("#064e3b")  # Emerald for contiguous
-                    border_color = QColor(ACCENT_EMERALD)
-                    text_color = QColor("#a7f3d0")
-                elif "link" in strat:
-                    fill_color = QColor("#083344")  # Cyan for linked
-                    border_color = QColor(ACCENT_CYAN)
-                    text_color = QColor("#a5f3fc")
+                    fill_color = QColor("#EEF2FF")
+                    border_color = QColor("#4F46E5")
+                    text_color = QColor("#3730A3")
                 else:
-                    fill_color = QColor("#78350f")  # Amber for indexed data
-                    border_color = QColor(ACCENT_AMBER)
-                    text_color = QColor("#fde68a")
+                    fill_color = QColor("#EAF2FF")
+                    border_color = QColor(ACCENT)
+                    text_color = QColor("#1E40AF")
 
             if is_highlighted:
-                border_color = QColor("#ffffff")
-                fill_color = fill_color.lighter(130)
+                border_color = QColor("#1D4ED8")
+                fill_color = QColor(ACCENT)
+                text_color = QColor("#FFFFFF")
             elif is_hovered:
-                border_color = QColor("#ffffff")
-                fill_color = fill_color.lighter(120)
+                border_color = QColor(ACCENT)
+                fill_color = fill_color.lighter(105)
 
             # Draw block tile
             path = QPainterPath()

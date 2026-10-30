@@ -137,7 +137,7 @@ class PageReplacementPage(QWidget):
         layout.setSpacing(3)
 
         title = QLabel("Page Replacement Simulator")
-        title.setStyleSheet("font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px;")
+        title.setStyleSheet("font-size: 22px; font-weight: 800; color: #172033; letter-spacing: -0.3px;")
 
         subtitle = QLabel("Explore how virtual memory manages page references when physical memory has a limited number of frames.")
         subtitle.setStyleSheet(f"font-size: 13px; color: {TEXT_SECONDARY};")
@@ -167,7 +167,7 @@ class PageReplacementPage(QWidget):
         row.setSpacing(14)
 
         lbl_algo = QLabel("Page Replacement Algorithm:")
-        lbl_algo.setStyleSheet("font-weight: 600; font-size: 13px; color: #ffffff;")
+        lbl_algo.setStyleSheet("font-weight: 600; font-size: 13px; color: #172033;")
 
         self.algo_combo = QComboBox()
         self.algo_combo.setMinimumWidth(240)
@@ -218,7 +218,7 @@ class PageReplacementPage(QWidget):
 
         hdr_row = QHBoxLayout()
         title = QLabel("Understanding Virtual Memory & Page Replacement")
-        title.setStyleSheet("font-weight: 700; font-size: 13px; color: #ffffff;")
+        title.setStyleSheet("font-weight: 700; font-size: 13px; color: #172033;")
         hint = QLabel("Virtual memory principles implemented in the OScope paging manager.")
         hint.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px;")
 
@@ -288,7 +288,7 @@ class PageReplacementPage(QWidget):
         top_row.setSpacing(14)
 
         lbl_frames = QLabel("Available Memory Frames:")
-        lbl_frames.setStyleSheet("font-weight: 600; font-size: 13px; color: #ffffff;")
+        lbl_frames.setStyleSheet("font-weight: 600; font-size: 13px; color: #172033;")
 
         self.spin_frames = QSpinBox()
         self.spin_frames.setRange(1, 32)
@@ -320,7 +320,7 @@ class PageReplacementPage(QWidget):
         ref_row.setSpacing(4)
 
         lbl_ref_title = QLabel("Page-Reference String:")
-        lbl_ref_title.setStyleSheet("font-weight: 600; font-size: 13px; color: #ffffff;")
+        lbl_ref_title.setStyleSheet("font-weight: 600; font-size: 13px; color: #172033;")
 
         self.input_ref_string = QLineEdit()
         self.input_ref_string.setFixedHeight(34)
@@ -329,7 +329,7 @@ class PageReplacementPage(QWidget):
             f"""
             QLineEdit {{
                 background-color: {BG_INPUT};
-                color: #ffffff;
+                color: #172033;
                 font-family: 'Consolas', 'Courier New', monospace;
                 font-size: 13px;
                 border: 1px solid {BORDER};
@@ -365,7 +365,7 @@ class PageReplacementPage(QWidget):
             f"""
             QPushButton {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {ACCENT}, stop:1 {ACCENT_INDIGO});
-                color: #ffffff;
+                color: #172033;
                 font-weight: 700;
                 font-size: 13px;
                 border-radius: 6px;
@@ -402,7 +402,7 @@ class PageReplacementPage(QWidget):
         # Section Heading
         res_header = QHBoxLayout()
         title = QLabel("Simulation Results & Frame Timeline")
-        title.setStyleSheet("font-size: 17px; font-weight: 800; color: #ffffff;")
+        title.setStyleSheet("font-size: 17px; font-weight: 800; color: #172033;")
         res_header.addWidget(title)
         res_header.addStretch()
         layout.addLayout(res_header)
@@ -463,7 +463,7 @@ class PageReplacementPage(QWidget):
 
         tl_header = QHBoxLayout()
         tl_title = QLabel("Frame-by-Frame Execution Timeline")
-        tl_title.setStyleSheet("font-weight: 700; font-size: 13px; color: #ffffff;")
+        tl_title.setStyleSheet("font-weight: 700; font-size: 13px; color: #172033;")
         tl_hint = QLabel("Step-by-step memory frame allocation, replacements, and hit/fault detection.")
         tl_hint.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px;")
 

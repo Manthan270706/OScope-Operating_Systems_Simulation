@@ -24,6 +24,7 @@ from ..theme import (
     ACCENT_EMERALD,
     ACCENT_HOVER,
     ACCENT_INDIGO,
+    ACCENT_LIGHT,
     ACCENT_ROSE,
     ACCENT_VIOLET,
     BG_APP,
@@ -74,8 +75,8 @@ class StepColumnWidget(QFrame):
             self.setStyleSheet(
                 f"""
                 QFrame {{
-                    background-color: rgba(56, 189, 248, 0.12);
-                    border: 2px solid {ACCENT_HOVER};
+                    background-color: {ACCENT_LIGHT};
+                    border: 2px solid {ACCENT};
                     border-radius: 8px;
                 }}
                 """
@@ -84,13 +85,13 @@ class StepColumnWidget(QFrame):
             self.setStyleSheet(
                 f"""
                 QFrame {{
-                    background-color: {BG_ELEVATED};
+                    background-color: {BG_SURFACE};
                     border: 1px solid {BORDER};
                     border-radius: 8px;
                 }}
                 QFrame:hover {{
                     border-color: {BORDER_LIGHT};
-                    background-color: rgba(255, 255, 255, 0.03);
+                    background-color: #F8FAFC;
                 }}
                 """
             )
@@ -108,18 +109,17 @@ class StepColumnWidget(QFrame):
         layout.addWidget(lbl_step)
 
         # 2. Page Reference Pill (P7)
-        page_color = PROCESS_COLORS[(self.step.page) % len(PROCESS_COLORS)]
         lbl_page = QLabel(f"P{self.step.page}")
         lbl_page.setFixedSize(54, 28)
         lbl_page.setAlignment(Qt.AlignCenter)
         lbl_page.setStyleSheet(
             f"""
-            background-color: rgba({int(page_color[1:3], 16)}, {int(page_color[3:5], 16)}, {int(page_color[5:7], 16)}, 0.25);
-            color: #ffffff;
+            background-color: {ACCENT_LIGHT};
+            color: {ACCENT};
             font-size: 13px;
             font-weight: 800;
             border-radius: 6px;
-            border: 1px solid {page_color};
+            border: 1px solid #BFDBFE;
             """
         )
         layout.addWidget(lbl_page, alignment=Qt.AlignHCenter)
@@ -130,24 +130,24 @@ class StepColumnWidget(QFrame):
         lbl_outcome.setAlignment(Qt.AlignCenter)
         if self.step.is_fault:
             lbl_outcome.setStyleSheet(
-                f"""
-                background-color: rgba(244, 63, 94, 0.2);
-                color: {ACCENT_ROSE};
+                """
+                background-color: #FEE2E2;
+                color: #DC2626;
                 font-size: 10px;
                 font-weight: 800;
                 border-radius: 4px;
-                border: 1px solid rgba(244, 63, 94, 0.5);
+                border: 1px solid #FECACA;
                 """
             )
         else:
             lbl_outcome.setStyleSheet(
-                f"""
-                background-color: rgba(16, 185, 129, 0.2);
-                color: {ACCENT_EMERALD};
+                """
+                background-color: #DCFCE7;
+                color: #16A34A;
                 font-size: 10px;
                 font-weight: 800;
                 border-radius: 4px;
-                border: 1px solid rgba(16, 185, 129, 0.5);
+                border: 1px solid #BBF7D0;
                 """
             )
         layout.addWidget(lbl_outcome, alignment=Qt.AlignHCenter)
@@ -172,21 +172,20 @@ class StepColumnWidget(QFrame):
                 frame_cell.setText("—")
                 frame_cell.setStyleSheet(
                     f"""
-                    background-color: rgba(255, 255, 255, 0.02);
+                    background-color: #F8FAFC;
                     color: {TEXT_MUTED};
                     font-size: 12px;
-                    border: 1px dashed {BORDER};
+                    border: 1px dashed {BORDER_LIGHT};
                     border-radius: 5px;
                     """
                 )
             else:
-                p_col = PROCESS_COLORS[(p_val) % len(PROCESS_COLORS)]
                 frame_cell.setText(str(p_val))
                 if is_newly_loaded:
-                    # Highlight freshly loaded frame with accent border
+                    # Highlight freshly loaded frame with accent
                     frame_cell.setStyleSheet(
                         f"""
-                        background-color: rgba({int(p_col[1:3], 16)}, {int(p_col[3:5], 16)}, {int(p_col[5:7], 16)}, 0.35);
+                        background-color: {ACCENT};
                         color: #ffffff;
                         font-size: 13px;
                         font-weight: 800;
@@ -197,11 +196,11 @@ class StepColumnWidget(QFrame):
                 else:
                     frame_cell.setStyleSheet(
                         f"""
-                        background-color: rgba({int(p_col[1:3], 16)}, {int(p_col[3:5], 16)}, {int(p_col[5:7], 16)}, 0.18);
-                        color: #ffffff;
+                        background-color: {ACCENT_LIGHT};
+                        color: #1E40AF;
                         font-size: 13px;
                         font-weight: 700;
-                        border: 1px solid rgba(255, 255, 255, 0.15);
+                        border: 1px solid #BFDBFE;
                         border-radius: 5px;
                         """
                     )
@@ -216,13 +215,13 @@ class StepColumnWidget(QFrame):
         if self.step.evicted_page is not None:
             lbl_evicted.setText(f"P{self.step.evicted_page}")
             lbl_evicted.setStyleSheet(
-                f"""
-                background-color: rgba(245, 158, 11, 0.2);
-                color: {ACCENT_AMBER};
+                """
+                background-color: #FEF3C7;
+                color: #D97706;
                 font-size: 10px;
                 font-weight: 700;
                 border-radius: 4px;
-                border: 1px solid rgba(245, 158, 11, 0.4);
+                border: 1px solid #FDE68A;
                 """
             )
             lbl_evicted.setToolTip(f"Page P{self.step.evicted_page} was evicted from memory.")

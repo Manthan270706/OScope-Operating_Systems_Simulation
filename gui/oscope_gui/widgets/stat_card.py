@@ -16,7 +16,7 @@ from ..theme import (
 
 
 class StatCard(QFrame):
-    """Compact metric card displaying title, formatted value, subtitle, accent highlight, and explanation tooltip."""
+    """Compact metric card displaying title, formatted value, subtitle, and explanation tooltip."""
 
     def __init__(
         self,
@@ -32,19 +32,16 @@ class StatCard(QFrame):
         self.setProperty("card", True)
         self.accent_color = accent_color
 
-        border_top_css = f"border-top: 3px solid {accent_color};" if accent_color else f"border-top: 2px solid {BORDER_LIGHT};"
-
         self.setStyleSheet(
             f"""
             QFrame#StatCard {{
                 background-color: {BG_SURFACE};
                 border: 1px solid {BORDER};
-                {border_top_css}
                 border-radius: 8px;
             }}
             QFrame#StatCard:hover {{
                 border-color: {BORDER_LIGHT};
-                background-color: #171f30;
+                background-color: #F8FAFC;
             }}
             """
         )
@@ -53,16 +50,10 @@ class StatCard(QFrame):
         layout.setContentsMargins(14, 12, 14, 12)
         layout.setSpacing(4)
 
-        # Header with title and subtle colored dot if accent_color
+        # Header with title
         hdr_layout = QHBoxLayout()
         hdr_layout.setContentsMargins(0, 0, 0, 0)
         hdr_layout.setSpacing(6)
-
-        if accent_color:
-            dot = QLabel()
-            dot.setFixedSize(6, 6)
-            dot.setStyleSheet(f"background-color: {accent_color}; border-radius: 3px;")
-            hdr_layout.addWidget(dot)
 
         self.title_label = QLabel(title)
         self.title_label.setStyleSheet(
@@ -100,4 +91,3 @@ class StatCard(QFrame):
     def update_values(self, value: str, subtitle: Optional[str] = None) -> None:
         """Alias for set_value to support updating status and subtitle."""
         self.set_value(value, subtitle)
-

@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import (
     QButtonGroup,
     QFrame,
@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from .backend.runner import BaseBackendRunner
+from .icons import render_svg_icon
 from .pages.address_translation_page import AddressTranslationPage
 from .pages.dashboard_page import DashboardPage
 from .pages.deadlock_page import DeadlockPage
@@ -33,9 +34,11 @@ from .theme import (
     ACCENT_HOVER,
     ACCENT_INDIGO,
     BG_APP,
+    BG_DARK,
     BG_SIDEBAR,
     BG_SURFACE,
     BORDER,
+    BORDER_LIGHT,
     MAIN_STYLESHEET,
     TEXT_MUTED,
     TEXT_PRIMARY,
@@ -164,12 +167,11 @@ class MainWindow(QMainWindow):
         logo_badge.setAlignment(Qt.AlignCenter)
         logo_badge.setStyleSheet(
             f"""
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {ACCENT}, stop:1 {ACCENT_INDIGO});
+            background-color: {ACCENT};
             color: #ffffff;
             font-size: 14px;
             font-weight: 800;
             border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
             """
         )
 
@@ -177,7 +179,7 @@ class MainWindow(QMainWindow):
         brand_text_layout.setSpacing(1)
 
         lbl_app = QLabel("OScope")
-        lbl_app.setStyleSheet("font-size: 18px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;")
+        lbl_app.setStyleSheet(f"font-size: 18px; font-weight: 800; color: {TEXT_PRIMARY}; letter-spacing: 0.3px;")
 
         lbl_tag = QLabel("OS Simulation Lab")
         lbl_tag.setStyleSheet(f"font-size: 11px; color: {TEXT_SECONDARY};")
@@ -202,77 +204,101 @@ class MainWindow(QMainWindow):
         self.nav_group = QButtonGroup(self)
         self.nav_group.setExclusive(True)
 
-        self.nav_btn_dash = QPushButton("  Overview Dashboard")
+        icon_sz = QSize(18, 18)
+
+        self.nav_btn_dash = QPushButton(" Overview Dashboard")
+        self.nav_btn_dash.setIcon(render_svg_icon("dashboard"))
+        self.nav_btn_dash.setIconSize(icon_sz)
         self.nav_btn_dash.setProperty("class", "nav-btn")
         self.nav_btn_dash.setCheckable(True)
         self.nav_btn_dash.clicked.connect(lambda: self.navigate_to_page("dashboard"))
         self.nav_group.addButton(self.nav_btn_dash)
         layout.addWidget(self.nav_btn_dash)
 
-        self.nav_btn_sched = QPushButton("  CPU Scheduling")
+        self.nav_btn_sched = QPushButton(" CPU Scheduling")
+        self.nav_btn_sched.setIcon(render_svg_icon("cpu"))
+        self.nav_btn_sched.setIconSize(icon_sz)
         self.nav_btn_sched.setProperty("class", "nav-btn")
         self.nav_btn_sched.setCheckable(True)
         self.nav_btn_sched.clicked.connect(lambda: self.navigate_to_page("scheduling"))
         self.nav_group.addButton(self.nav_btn_sched)
         layout.addWidget(self.nav_btn_sched)
 
-        self.nav_btn_mem = QPushButton("  Memory Allocation")
+        self.nav_btn_mem = QPushButton(" Memory Allocation")
+        self.nav_btn_mem.setIcon(render_svg_icon("memory"))
+        self.nav_btn_mem.setIconSize(icon_sz)
         self.nav_btn_mem.setProperty("class", "nav-btn")
         self.nav_btn_mem.setCheckable(True)
         self.nav_btn_mem.clicked.connect(lambda: self.navigate_to_page("memory"))
         self.nav_group.addButton(self.nav_btn_mem)
         layout.addWidget(self.nav_btn_mem)
 
-        self.nav_btn_page = QPushButton("  Page Replacement")
+        self.nav_btn_page = QPushButton(" Page Replacement")
+        self.nav_btn_page.setIcon(render_svg_icon("paging"))
+        self.nav_btn_page.setIconSize(icon_sz)
         self.nav_btn_page.setProperty("class", "nav-btn")
         self.nav_btn_page.setCheckable(True)
         self.nav_btn_page.clicked.connect(lambda: self.navigate_to_page("paging"))
         self.nav_group.addButton(self.nav_btn_page)
         layout.addWidget(self.nav_btn_page)
 
-        self.nav_btn_deadlock = QPushButton("  Deadlock Management")
+        self.nav_btn_deadlock = QPushButton(" Deadlock Management")
+        self.nav_btn_deadlock.setIcon(render_svg_icon("deadlock"))
+        self.nav_btn_deadlock.setIconSize(icon_sz)
         self.nav_btn_deadlock.setProperty("class", "nav-btn")
         self.nav_btn_deadlock.setCheckable(True)
         self.nav_btn_deadlock.clicked.connect(lambda: self.navigate_to_page("deadlock"))
         self.nav_group.addButton(self.nav_btn_deadlock)
         layout.addWidget(self.nav_btn_deadlock)
 
-        self.nav_btn_disk = QPushButton("  Disk Scheduling")
+        self.nav_btn_disk = QPushButton(" Disk Scheduling")
+        self.nav_btn_disk.setIcon(render_svg_icon("disk"))
+        self.nav_btn_disk.setIconSize(icon_sz)
         self.nav_btn_disk.setProperty("class", "nav-btn")
         self.nav_btn_disk.setCheckable(True)
         self.nav_btn_disk.clicked.connect(lambda: self.navigate_to_page("disk"))
         self.nav_group.addButton(self.nav_btn_disk)
         layout.addWidget(self.nav_btn_disk)
 
-        self.nav_btn_linux = QPushButton("  Linux / POSIX IPC")
+        self.nav_btn_linux = QPushButton(" Linux / POSIX IPC")
+        self.nav_btn_linux.setIcon(render_svg_icon("linux"))
+        self.nav_btn_linux.setIconSize(icon_sz)
         self.nav_btn_linux.setProperty("class", "nav-btn")
         self.nav_btn_linux.setCheckable(True)
         self.nav_btn_linux.clicked.connect(lambda: self.navigate_to_page("linux"))
         self.nav_group.addButton(self.nav_btn_linux)
         layout.addWidget(self.nav_btn_linux)
 
-        self.nav_btn_monitor = QPushButton("  Host Monitoring")
+        self.nav_btn_monitor = QPushButton(" Host Monitoring")
+        self.nav_btn_monitor.setIcon(render_svg_icon("monitor"))
+        self.nav_btn_monitor.setIconSize(icon_sz)
         self.nav_btn_monitor.setProperty("class", "nav-btn")
         self.nav_btn_monitor.setCheckable(True)
         self.nav_btn_monitor.clicked.connect(lambda: self.navigate_to_page("monitor"))
         self.nav_group.addButton(self.nav_btn_monitor)
         layout.addWidget(self.nav_btn_monitor)
 
-        self.nav_btn_fs = QPushButton("  Simulated File System")
+        self.nav_btn_fs = QPushButton(" Simulated File System")
+        self.nav_btn_fs.setIcon(render_svg_icon("filesystem"))
+        self.nav_btn_fs.setIconSize(icon_sz)
         self.nav_btn_fs.setProperty("class", "nav-btn")
         self.nav_btn_fs.setCheckable(True)
         self.nav_btn_fs.clicked.connect(lambda: self.navigate_to_page("filesystem"))
         self.nav_group.addButton(self.nav_btn_fs)
         layout.addWidget(self.nav_btn_fs)
 
-        self.nav_btn_vm = QPushButton("  Virtual Memory & MMU")
+        self.nav_btn_vm = QPushButton(" Virtual Memory & MMU")
+        self.nav_btn_vm.setIcon(render_svg_icon("translation"))
+        self.nav_btn_vm.setIconSize(icon_sz)
         self.nav_btn_vm.setProperty("class", "nav-btn")
         self.nav_btn_vm.setCheckable(True)
         self.nav_btn_vm.clicked.connect(lambda: self.navigate_to_page("translation"))
         self.nav_group.addButton(self.nav_btn_vm)
         layout.addWidget(self.nav_btn_vm)
 
-        self.nav_btn_lifecycle = QPushButton("  Process Lifecycle")
+        self.nav_btn_lifecycle = QPushButton(" Process Lifecycle")
+        self.nav_btn_lifecycle.setIcon(render_svg_icon("lifecycle"))
+        self.nav_btn_lifecycle.setIconSize(icon_sz)
         self.nav_btn_lifecycle.setProperty("class", "nav-btn")
         self.nav_btn_lifecycle.setCheckable(True)
         self.nav_btn_lifecycle.clicked.connect(lambda: self.navigate_to_page("lifecycle"))
@@ -283,7 +309,7 @@ class MainWindow(QMainWindow):
 
         layout.addStretch()
 
-        # Bottom: Student-friendly status indicator
+        # Bottom: Student-friendly status indicator matching reference design
         status_box = QFrame()
         status_box.setStyleSheet(
             f"""
@@ -291,24 +317,53 @@ class MainWindow(QMainWindow):
                 background-color: {BG_SURFACE};
                 border: 1px solid {BORDER};
                 border-radius: 8px;
-                padding: 6px;
+                padding: 4px;
             }}
             """
         )
         sb_layout = QVBoxLayout(status_box)
         sb_layout.setContentsMargins(8, 8, 8, 8)
-        sb_layout.setSpacing(4)
+        sb_layout.setSpacing(6)
 
         info = self.runner.get_info()
-        status_text = "Ready to run experiments" if info.is_available else "Engine unavailable"
+        status_text = "Engine available" if info.is_available else "Engine unavailable"
         status_state = "success" if info.is_available else "error"
 
         self.sidebar_badge = StatusBadge(status_text, status_state)
         sb_layout.addWidget(self.sidebar_badge)
 
+        self.sidebar_check_btn = QPushButton("Check Status")
+        self.sidebar_check_btn.setFixedHeight(28)
+        self.sidebar_check_btn.setStyleSheet(
+            f"""
+            QPushButton {{
+                background-color: {BG_SURFACE};
+                color: {TEXT_PRIMARY};
+                border: 1px solid {BORDER_LIGHT};
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 500;
+            }}
+            QPushButton:hover {{
+                background-color: {BG_DARK};
+                border-color: {TEXT_MUTED};
+            }}
+            """
+        )
+        self.sidebar_check_btn.clicked.connect(self._refresh_sidebar_status)
+        sb_layout.addWidget(self.sidebar_check_btn)
+
         layout.addWidget(status_box)
 
         return frame
+
+    def _refresh_sidebar_status(self) -> None:
+        """Refresh engine availability status from sidebar."""
+        info = self.runner.get_info()
+        status_text = "Engine available" if info.is_available else "Engine unavailable"
+        status_state = "success" if info.is_available else "error"
+        self.sidebar_badge.set_state(status_state, status_text)
+        self.dashboard_page.refresh_backend_status()
 
     def navigate_to_page(self, page_name: str) -> None:
         """Switch stacked page between dashboard, scheduling, memory, paging, deadlock, disk, linux, monitor, filesystem, translation, and lifecycle."""
